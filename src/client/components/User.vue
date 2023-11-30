@@ -17,6 +17,7 @@ import StatusIcon from "./StatusIcon.vue";
 export default {
   name: "User",
   components: { StatusIcon },
+  emits: ["select"],
   props: {
     user: Object,
     selected: Boolean,
