@@ -40,13 +40,14 @@ export default {
       socket.connect();
     }
 
-    socket.on("session", ({ sessionID, userID }) => {
+    socket.on("session", ({ sessionID, userID, room }) => {
       // attach the session ID to the next reconnection attempts
       socket.auth = { sessionID };
       // store it in the localStorage
       localStorage.setItem("sessionID", sessionID);
       // save the ID of the user
       socket.userID = userID;
+      socket.room = room;
     });
 
     socket.on("connect_error", (err) => {

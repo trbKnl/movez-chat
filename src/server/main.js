@@ -7,16 +7,33 @@ const io = new Server(server)
 import Redis from "ioredis";
 const redisClient = new Redis();
 import ViteExpress from "vite-express";
+import session from "express-session";
 
+// INITIALIZE SESSION
+
+const sessionMiddleware = session({
+  secret: "changeit",
+  resave: true,
+  saveUninitialized: true,
+});
+
+app.use(sessionMiddleware);
+
+io.engine.use(sessionMiddleware);
+
+// GET DIRNAME
+
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // EXPRESS ROUTES
 
-app.get("/hello", (req, res) => {
-  res.send("Hello Vite + Vue!");
-});
-
-app.get('/banaan', (req, res) => {
-  res.send('<h1>Hello world</h1>');
+app.get("/chat/:room", (req, res) => {
+  const room = req.params.room;
+  req.session.room = room;
+  res.sendFile(resolve(__dirname + "/../../index.html"));
 });
 
 
@@ -32,6 +49,9 @@ import { RedisMessageStore } from "./messageStore.js";
 const messageStore = new RedisMessageStore(redisClient);
 
 io.use(async (socket, next) => {
+  console.log(`SOCKET ROOM ${socket.request.session.room}`)
+  const room = socket.request.session.room
+
   const sessionID = socket.handshake.auth.sessionID;
   if (sessionID) {
     const session = await sessionStore.findSession(sessionID);
@@ -39,6 +59,7 @@ io.use(async (socket, next) => {
       socket.sessionID = sessionID;
       socket.userID = session.userID;
       socket.username = session.username;
+      socket.room = room
       return next();
     }
   }
@@ -49,6 +70,7 @@ io.use(async (socket, next) => {
   socket.sessionID = randomId();
   socket.userID = randomId();
   socket.username = username;
+  socket.room = room;
   next();
 });
 
@@ -58,12 +80,14 @@ io.on("connection", async (socket) => {
     userID: socket.userID,
     username: socket.username,
     connected: true,
+    room: socket.room
   });
 
   // emit session details
   socket.emit("session", {
     sessionID: socket.sessionID,
     userID: socket.userID,
+    room: socket.room
   });
 
   // join the "userID" room
@@ -87,12 +111,14 @@ io.on("connection", async (socket) => {
   });
 
   sessions.forEach((session) => {
-    users.push({
-      userID: session.userID,
-      username: session.username,
-      connected: session.connected,
-      messages: messagesPerUser.get(session.userID) || [],
-    });
+    if (session.room === socket.room) {
+      users.push({
+        userID: session.userID,
+        username: session.username,
+        connected: session.connected,
+        messages: messagesPerUser.get(session.userID) || [],
+      });
+    }
   });
   socket.emit("users", users);
 
@@ -100,6 +126,7 @@ io.on("connection", async (socket) => {
   socket.broadcast.emit("user connected", {
     userID: socket.userID,
     username: socket.username,
+    room: socket.room,
     connected: true,
     messages: [],
   });

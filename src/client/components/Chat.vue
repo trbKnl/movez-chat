@@ -98,15 +98,19 @@ export default {
     });
 
     socket.on("user connected", (user) => {
-      for (let i = 0; i < this.users.length; i++) {
-        const existingUser = this.users[i];
-        if (existingUser.userID === user.userID) {
-          existingUser.connected = true;
-          return;
-        }
-      }
-      initReactiveProperties(user);
-      this.users.push(user);
+      console.log(`MY SOCKET ROOM ${socket.room}`)
+      console.log(`USER CONNECTED SOCKET ROOM ${user.room}`)
+      if (socket.room === user.room) {
+          for (let i = 0; i < this.users.length; i++) {
+            const existingUser = this.users[i];
+            if (existingUser.userID === user.userID) {
+              existingUser.connected = true;
+              return;
+            }
+          }
+          initReactiveProperties(user);
+          this.users.push(user);
+     }
     });
 
     socket.on("user disconnected", (id) => {
