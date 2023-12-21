@@ -11,16 +11,17 @@ The client and server are based on this [example](https://socket.io/get-started/
 ## Start the server
 
 ```
-# start the development server
-npm run dev
-
 # start redis cache and session management
 docker run --rm -p 6379:6379 redis:7
+
+# start the development server
+npm run dev
 ```
 
-## Join a chatroom
+## Join a chatroom with a username
 
 ```
-http://localhost:3000/chat/room/
+http://localhost:3000/chat/my_room/my_username
 ```
 
+After initial login your session is stored, upon next login the room id and username are loaded from the session
