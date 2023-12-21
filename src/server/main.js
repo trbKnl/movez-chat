@@ -30,9 +30,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // EXPRESS ROUTES
 
-app.get("/chat/:room", (req, res) => {
+app.get("/chat/:room/:username", (req, res) => {
   const room = req.params.room;
+  const username = req.params.username;
   req.session.room = room;
+  req.session.username = username;
   res.sendFile(resolve(__dirname + "/../../index.html"));
 });
 
@@ -50,27 +52,31 @@ const messageStore = new RedisMessageStore(redisClient);
 
 io.use(async (socket, next) => {
   console.log(`SOCKET ROOM ${socket.request.session.room}`)
+  console.log(`SOCKET USERNAME ${socket.request.session.username}`)
   const room = socket.request.session.room
+  const username = socket.request.session.username
 
   const sessionID = socket.handshake.auth.sessionID;
   if (sessionID) {
+    console.log(`session detected: ${sessionID}`)
+    // If we can find a session restore it 
+    // Changing the url path won't have an effect after the initial click
     const session = await sessionStore.findSession(sessionID);
     if (session) {
       socket.sessionID = sessionID;
       socket.userID = session.userID;
       socket.username = session.username;
-      socket.room = room
+      socket.room = session.room
       return next();
     }
   }
-  const username = socket.handshake.auth.username;
   if (!username) {
     return next(new Error("invalid username"));
   }
   socket.sessionID = randomId();
   socket.userID = randomId();
-  socket.username = username;
-  socket.room = room;
+  socket.username = username
+  socket.room = room
   next();
 });
 
