@@ -30,14 +30,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // EXPRESS ROUTES
 
+
 app.get("/chat/:room/:username", (req, res) => {
   const room = req.params.room;
   const username = req.params.username;
   req.session.room = room;
   req.session.username = username;
-  res.sendFile(resolve(__dirname + "/../../index.html"));
+  res.sendFile(resolve(__dirname + "/../../chat.html"));
 });
-
 
 // SOCKET IO SERVER
 
@@ -51,8 +51,8 @@ import { RedisMessageStore } from "./messageStore.js";
 const messageStore = new RedisMessageStore(redisClient);
 
 io.use(async (socket, next) => {
-  console.log(`SOCKET ROOM ${socket.request.session.room}`)
-  console.log(`SOCKET USERNAME ${socket.request.session.username}`)
+  console.log(`Extracted from url: ${socket.request.session.room}`)
+  console.log(`Extracted from url: ${socket.request.session.username}`)
   const room = socket.request.session.room
   const username = socket.request.session.username
 
@@ -67,11 +67,10 @@ io.use(async (socket, next) => {
       socket.userID = session.userID;
       socket.username = session.username;
       socket.room = session.room
+      console.log(`Loaded from session: ${session.username}`)
+      console.log(`Loaded from session: ${session.room}`)
       return next();
     }
-  }
-  if (!username) {
-    return next(new Error("invalid username"));
   }
   socket.sessionID = randomId();
   socket.userID = randomId();
@@ -160,6 +159,7 @@ io.on("connection", async (socket) => {
         userID: socket.userID,
         username: socket.username,
         connected: false,
+        room: socket.room
       });
     }
   });
