@@ -1,6 +1,8 @@
 <template>
   <div>
     <div class="left-panel">
+
+      <!-- Active Users Section -->
       <div class="users-section">
        <h2 class="users-header">Currently Online</h2>
           <user
@@ -20,6 +22,12 @@
         </div>
       </div>
 
+      <!-- Progress Bar Section -->
+      <div class="progress-bar-wrapper">
+          <div class="progress-bar" ref="progressBar">
+            <!-- Your progress bar content goes here -->
+          </div>
+      </div>
 
 
     </div>
@@ -47,6 +55,8 @@ export default {
       cardFlipped: false,
       randomMessage: '',
       showDialog: false,
+      shownMessages: [],
+      progressValue: 0,
     };
   },
   methods: {
@@ -55,15 +65,52 @@ export default {
     if (this.cardFlipped) {
       // Option 1: Generate message on client-side
       this.randomMessage = this.generateRandomMessage();
-      console.log(this.randomMessage)
+      this.updateProgress();
+      console.log('Message:', this.randomMessage)
       // Option 2: Fetch message from server
       // this.randomMessage = await this.fetchRandomMessageFromServer();
     }
   },
   generateRandomMessage() {
     const messages = ["Message 1", "Message 2", "Message 3","Message 4", "Message 5", "Message 6","Message 7", "Message 8", "Message 9", /* ...more messages */];
-    return messages[Math.floor(Math.random() * messages.length)];
-  },
+    // Filter out messages that have already been shown
+    var availableMessages = messages.filter((message) => !this.shownMessages.includes(message));
+
+    if (availableMessages.length === 0) {
+      // All messages have been shown, reset the shownMessages array
+      this.shownMessages = [];
+      availableMessages = messages
+    }
+
+    // Select a random message from the available messages
+    const randomIndex = Math.floor(Math.random() * availableMessages.length);
+    const randomMessage = availableMessages[randomIndex];
+
+    // Add the selected message to the shownMessages array
+    this.shownMessages.push(randomMessage);
+
+    return randomMessage;
+
+    },
+
+    updateProgress() {
+      // Calculate the ratio of selected messages to total messages
+      const selectedMessagesCount = this.shownMessages.length; // You should track selected messages
+      const totalMessagesCount = 9 // You should have an array of all messages
+      const ratio = (selectedMessagesCount / totalMessagesCount) * 100;
+      console.log('progress ratio', ratio)
+      // Set the progressValue to the calculated ratio
+      this.progressValue = Math.min(ratio, 100); // Ensure it doesn't exceed 100%
+
+      // Check if the progress is complete and add the "progress" class for styling
+      if (this.progressValue >= 100) {
+        this.progressValue = 100;
+      }
+
+      // Update the width of the progress bar
+      this.$refs.progressBar.style.width = `${this.progressValue}%`;
+    },
+
     async fetchRandomMessageFromServer() {
       // Fetch message from server and return it
       // Example: const response = await axios.get('/api/random-message');
@@ -86,7 +133,11 @@ export default {
       user.hasNewMessages = false;
     },
   },
+
   created() {
+    this.$nextTick(() => {
+      this.$refs.progressBar.style.width = "0";
+    });
 
     socket.on("connect", () => {
       this.users.forEach((user) => {
@@ -176,7 +227,7 @@ export default {
         }
       }
     });
-    
+
   },
   destroyed() {
     socket.off("connect");
@@ -210,17 +261,19 @@ export default {
   .users-section {
     overflow-y: auto;
     margin: 20px;
+    flex: 0 0 30%;
     /* Other styling as needed */
   }
 
   .cards-section {
-    position: absolute; /* Absolute positioning */
-    top: 50%; /* Center vertically */
-    left: 50%; /* Center horizontally */
-    transform: translate(-50%, -50%); /* Adjust for the size of the cards-section */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     justify-content: center;
     align-items: center;
+    flex: 0 0 50%;
   }
 
   .card-pile {
@@ -289,6 +342,33 @@ export default {
       right: 10px;
       transform: rotate(180deg); /* Upside-down for bottom-right */
     }
+  }
+
+  .progress-bar-wrapper {
+    position: absolute;
+    bottom: 10%; /* Adjust the position as needed */
+    left: 5%;
+    width: 90%;
+    flex: 0 0 20%;
+    background-color: white;
+    height: 3rem;
+    border-radius: 10px; /* Add rounded corners */
+    border: 3px solid #fff; /* Black border */
+  }
+
+  .progress-bar {
+    position: absolute;
+    bottom: 10%; /* Move 10% from the bottom */
+    width: 100%; /* Adjust the width as needed */
+    background-color: #3f0e40;
+    height: 2.4rem;
+    border-radius: 10px; /* Add rounded corners */
+    flex: 0 0 30%;
+    transition: width 0.5s, background-color 0.5s; /* Transition width and background-color */
+
+  }
+  .progress {
+    background-color: #3f0e40; /* Blue color for progress */
   }
 
 </style>
