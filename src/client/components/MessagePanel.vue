@@ -1,9 +1,12 @@
 <template>
-  <div class="chat-container">
-    <div class="header">
-      <status-icon :connected="user.connected" />
-      <div class="username">{{ user.username }}</div>
+<div class="chat-container">
+  <div class="header">
+  <!-- <status-icon :connected="user.connected" />
+   <div class="username">{{ user.username }}</div> -->
+    <div class="avatar-container" @click="toggleTip">
+      <img src="/public/images/movez.png" alt="Avatar" class="avatar" />
     </div>
+  </div>
 
     <div class="content" ref="messagesContainer">
       <ul class="messages">
@@ -33,6 +36,11 @@
         <i class="fas fa-paper-plane"></i> Send
       </button>
     </form>
+
+    <div v-if="showTip" class="chat-tip">
+      Here's a tip on how to conduct a conversation...
+    </div>
+
   </div>
 </template>
 
@@ -54,9 +62,13 @@ export default {
   data() {
     return {
       input: "",
+      showTip: false,
     };
   },
   methods: {
+    toggleTip() {
+       this.showTip = !this.showTip;
+     },
     onSubmit() {
       if (this.isValid) {
         this.$emit("input", this.input);
@@ -110,20 +122,44 @@ export default {
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  line-height: 40px;
-  padding: 20px 40px;
-  border-bottom: 1px solid #e0e0e0;
-  background-color: #f5f5f5;
+display: flex;
+justify-content: flex-end; /* Aligns items to the end (right) */
+line-height: 40px;
+padding: 20px 40px;
+border-bottom: 1px solid #e0e0e0;
+background-color: #f5f5f5;
 }
+.avatar-container {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 
 .username {
   font-size: 18px;
   font-weight: bold;
   color: #333;
+  margin-right: auto; /* Pushes everything else to the right */
 }
+
+.chat-tip {
+  position: absolute;
+  top: 40px;
+  right: 130px;
+  padding: 10px;
+  background-color: #3f0e401a;
+  border-radius: 5px;
+  box-shadow: 0 10px 15px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
 
 .content {
   flex-grow: 1;
