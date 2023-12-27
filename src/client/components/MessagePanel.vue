@@ -3,7 +3,8 @@
   <div class="header">
   <!-- <status-icon :connected="user.connected" />
    <div class="username">{{ user.username }}</div> -->
-    <div class="avatar-container" @click="toggleTip">
+    <div class="avatar-container"  @mouseover="showTip = true"
+         @mouseleave="showTip = false">
       <img src="/public/images/movez.png" alt="Avatar" class="avatar" />
     </div>
   </div>
@@ -16,11 +17,12 @@
           class="message"
           :class="{'message-self': message.fromSelf}"
         >
-          <div v-if="displaySender(message, index)" class="sender">
+         <!-- Removed the sender's username display -->
+         <!--  <div v-if="displaySender(message, index)" class="sender">
             {{ message.fromSelf ? "You" : user.username }}
-          </div>
+          </div> -->
+
           <div class="message-content">{{ message.content }}</div>
-          <div class="timestamp">{{ formatTimestamp(message.timestamp) }}</div>
         </li>
       </ul>
     </div>
@@ -86,10 +88,6 @@ export default {
         index === 0 ||
         this.user.messages[index - 1].fromSelf !== message.fromSelf
       );
-    },
-    formatTimestamp(timestamp) {
-      // Implement timestamp formatting logic here
-      return timestamp;
     },
     scrollToBottom() {
       this.$nextTick(() => {
@@ -175,33 +173,33 @@ background-color: #f5f5f5;
 
 .message {
   margin-bottom: 10px;
-  padding: 10px 15px;
+  margin-left: -40px;
+  padding: 10px 15px; /* Adjust padding for a tighter fit */
   border-radius: 15px;
   background-color: #3f0e40; /* Message bubble color */
-  max-width: 70%;
+  display: block; /* Allows bubble to fit content */
+  max-width:  fit-content; /* Maximum width to prevent overly wide bubbles */
 }
+
+
 
 .message-self {
   background-color: #a574a6; /* Self message color */
   margin-left: auto;
+  max-width: fit-content;
 }
 
 .sender {
   font-weight: bold;
   margin-bottom: 5px;
+  color: #fff;
 }
 
 .message-content {
   word-wrap: break-word;
-  color: #333;
+  color: #fff;
 }
 
-.timestamp {
-  font-size: 12px;
-  color: #999;
-  text-align: right;
-  margin-top: 5px;
-}
 
 .form {
   display: flex;

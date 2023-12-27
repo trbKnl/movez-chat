@@ -139,6 +139,18 @@ export default {
       this.$refs.progressBar.style.width = "0";
     });
 
+    this.$watch(
+      () => this.users,
+      (newUsers) => {
+        // Check if there are users and no user is currently selected
+        if (newUsers.length > 0 && !this.selectedUser) {
+          // Select the first user
+          this.onSelectUser(newUsers[0]);
+        }
+      },
+      { immediate: true } // This ensures the watcher is triggered immediately with the current value
+    );
+
     socket.on("connect", () => {
       this.users.forEach((user) => {
         if (user.self) {
