@@ -1,10 +1,18 @@
 <template>
   <div>
+   <div v-if="!showThankYou">
     <div class="left-panel">
 
       <!-- Active Users Section -->
       <div class="users-section">
-       <h2 class="users-header">Currently Online</h2>
+
+         <div class="header">
+           <h2 class="users-header">Currently Online</h2>
+           <button @click="quitGame" class="quit-game-button">
+               <img src="/public/images/quit.png" alt="Quit" />
+             </button>
+        </div>
+
           <user
             v-for="user in users"
             :key="user.userID"
@@ -12,7 +20,7 @@
             :selected="selectedUser === user"
             @select="onSelectUser(user)"
           />
-        </div>
+      </div>
 
       <!-- Card Pile Section -->
       <div class="cards-section">
@@ -29,25 +37,43 @@
           </div>
       </div>
 
-
     </div>
+
     <message-panel
       v-if="selectedUser"
       :user="selectedUser"
       @input="onMessage"
       class="right-panel"
     />
+
+    <!-- Quit Confirmation Modal -->
+    <div v-if="showQuitConfirmation" class="modal">
+      <div class="modal-content">
+        <h2>Confirm Quit</h2>
+        <p>Are you sure you want to quit the game?</p>
+        <button @click="confirmQuit">Yes, Quit</button>
+        <button @click="cancelQuit">Cancel</button>
+      </div>
+    </div>
+
+  <!-- End   v-if="!showThankYou" case-->
   </div>
+
+  <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
+
+  </div>
+
 </template>
 
 <script>
 import socket from "../socket";
 import User from "./User.vue";
 import MessagePanel from "./MessagePanel.vue";
+import ThankYou from './ThankYou.vue';
 
 export default {
   name: "Chat",
-  components: { User, MessagePanel },
+  components: { User, MessagePanel, ThankYou },
   data() {
     return {
       selectedUser: null,
@@ -57,6 +83,8 @@ export default {
       showDialog: false,
       shownMessages: [],
       progressValue: 0,
+      showThankYou: false,
+      showQuitConfirmation: false,
     };
   },
   methods: {
@@ -132,6 +160,22 @@ export default {
       this.selectedUser = user;
       user.hasNewMessages = false;
     },
+    quitGame() {
+      this.showQuitConfirmation = true;
+    },
+    confirmQuit() {
+      this.showThankYou = true;
+    },
+    cancelQuit() {
+      this.showQuitConfirmation = false;
+    },
+    handleSuggestion(suggestion) {
+      // Handle the suggestion submission
+      console.log('Suggestion:', suggestion);
+      // Additional logic for handling the suggestion (e.g., sending to a server)
+    }
+
+
   },
 
   created() {
@@ -270,6 +314,30 @@ export default {
     color: white;
   }
 
+  .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+    }
+
+    .users-header {
+      margin: 0;
+      /* Additional styling for the header text */
+    }
+
+    .quit-game-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.quit-game-button img {
+  width: 30px; /* Adjust size as needed */
+  height: auto;
+}
+
   .users-section {
     overflow-y: auto;
     margin: 20px;
@@ -358,7 +426,7 @@ export default {
 
   .progress-bar-wrapper {
     position: absolute;
-    bottom: 10%; /* Adjust the position as needed */
+    bottom: 15%; /* Adjust the position as needed */
     left: 5%;
     width: 90%;
     flex: 0 0 20%;
@@ -383,4 +451,26 @@ export default {
     background-color: #3f0e40; /* Blue color for progress */
   }
 
+  .modal {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+   display: flex;
+   align-items: center;
+   justify-content: center;
+ }
+
+ .modal-content {
+   background-color: white;
+   padding: 20px;
+   border-radius: 5px;
+   text-align: center;
+ }
+
+ img {
+   background-color: transparent;
+ }
 </style>
