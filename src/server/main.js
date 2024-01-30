@@ -12,7 +12,10 @@ import winston  from "winston"
 // CONFIGURE LOGGER
 const logger = winston.createLogger({
     level: 'info', 
-    format: winston.format.json(), 
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json(), 
+    ),
     transports: [
         new winston.transports.Console(), 
     ]
@@ -180,6 +183,11 @@ io.on("connection", async (socket) => {
       from: socket.userID,
       to,
     };
+    logger.log("info", {
+      "room": `${socket.room}`, 
+      "user": `${socket.username}`,
+      "message": `${JSON.stringify(message)}`,
+    })
     socket.to(to).to(socket.userID).emit("private message", message);
     messageStore.saveMessage(message);
   });
