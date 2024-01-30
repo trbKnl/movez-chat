@@ -3,7 +3,6 @@ const app = express();
 import http from 'http';
 const server = http.createServer(app);
 import { Server } from "socket.io";
-const io = new Server(server)
 import Redis from "ioredis";
 import ViteExpress from "vite-express";
 import session from "express-session";
@@ -38,18 +37,26 @@ let redisClient
 let redisHost
 let redisPort
 let redisUri
+let io
+let domain
 
 if (environment === 'development') {
     console.log('Running in development mode');
     chatAppUrl = "/../../chat.html"
     redisClient = new Redis();
+    io = new Server(server)
 } else if (environment === 'production') {
     chatAppUrl = "/../../dist/chat.html"
     app.use(express.static(__dirname + '/../../dist/assets'));
     redisHost = process.env.REDIS_HOST || "localhost"
     redisPort = process.env.REDIS_PORT || "6379"
     redisUri = `redis://${redisHost}:${redisPort}`
-    logger.log("info",  `REDIS URI ${redisUri}`)
+    domain = process.env.DOMAIN || "http://localhost"
+    io = new Server(server, {
+      cors: {
+        origin: domain
+      }
+    })
     redisClient = new Redis(redisUri);
 } else {
   throw new Error("Environment needs to be set")
