@@ -8,7 +8,12 @@ import ViteExpress from "vite-express";
 import session from "express-session";
 import winston  from "winston"
 
+// START SOCKET IO SERVER
+
+const io = new Server(server)
+
 // CONFIGURE LOGGER
+
 const logger = winston.createLogger({
     level: 'info', 
     format: winston.format.combine(
@@ -19,7 +24,6 @@ const logger = winston.createLogger({
         new winston.transports.Console(), 
     ]
 });
-
 
 // GET DIRNAME
 
@@ -37,14 +41,12 @@ let redisClient
 let redisHost
 let redisPort
 let redisUri
-let io
 let domain
 
 if (environment === 'development') {
     console.log('Running in development mode');
     chatAppUrl = "/../../chat.html"
     redisClient = new Redis();
-    io = new Server(server)
 } else if (environment === 'production') {
     chatAppUrl = "/../../dist/chat.html"
     app.use(express.static(__dirname + '/../../dist/assets'));
@@ -52,11 +54,6 @@ if (environment === 'development') {
     redisPort = process.env.REDIS_PORT || "6379"
     redisUri = `redis://${redisHost}:${redisPort}`
     domain = process.env.DOMAIN || "http://localhost"
-    io = new Server(server, {
-      cors: {
-        origin: domain
-      }
-    })
     redisClient = new Redis(redisUri);
 } else {
   throw new Error("Environment needs to be set")
@@ -107,7 +104,6 @@ io.use(async (socket, next) => {
   if (sessionID) {
     console.log(`session detected: ${sessionID}`)
     // If we can find a session restore it 
-    // Changing the url path won't have an effect after the initial click
     const session = await sessionStore.findSession(sessionID);
     if (session) {
       socket.sessionID = sessionID;
@@ -216,6 +212,9 @@ io.on("connection", async (socket) => {
     }
   });
 });
+
+
+// START SERVER
 
 server.listen(3000, () =>
   console.log(`server listening at http://localhost:${3000}`)

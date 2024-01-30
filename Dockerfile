@@ -5,6 +5,7 @@ FROM node:16
 COPY . .
 
 # Install dependencies
+
 RUN npm install
 RUN npm run build
 
