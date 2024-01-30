@@ -9,6 +9,22 @@ const redisClient = new Redis();
 import ViteExpress from "vite-express";
 import session from "express-session";
 
+// SETUP PRODUCTION AND DEVELOPMENT
+
+const environment = process.env.NODE_ENV || 'development';
+
+let chatAppUrl
+if (environment === 'development') {
+    console.log('Running in development mode');
+    chatAppUrl = "/../../chat.html"
+} else if (environment === 'production') {
+    chatAppUrl = "/../../dist/chat.html"
+    console.log('Running in production mode');
+} else {
+  throw new Error("Environment needs to be set")
+}
+
+
 // INITIALIZE SESSION
 
 const sessionMiddleware = session({
@@ -36,7 +52,7 @@ app.get("/chat/:room/:username", (req, res) => {
   const username = req.params.username;
   req.session.room = room;
   req.session.username = username;
-  res.sendFile(resolve(__dirname + "/../../chat.html"));
+  res.sendFile(resolve(__dirname + chatAppUrl));
 });
 
 // SOCKET IO SERVER
