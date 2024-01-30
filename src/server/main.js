@@ -5,21 +5,49 @@ const server = http.createServer(app);
 import { Server } from "socket.io";
 const io = new Server(server)
 import Redis from "ioredis";
-const redisClient = new Redis();
 import ViteExpress from "vite-express";
 import session from "express-session";
+import winston  from "winston"
+
+// CONFIGURE LOGGER
+const logger = winston.createLogger({
+    level: 'info', 
+    format: winston.format.json(), 
+    transports: [
+        new winston.transports.Console(), 
+    ]
+});
+
+
+// GET DIRNAME
+
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 
 // SETUP PRODUCTION AND DEVELOPMENT
 
-const environment = process.env.NODE_ENV || 'development';
+const environment = process.env.NODE_ENV || 'development'
 
 let chatAppUrl
+let redisClient
+let redisHost
+let redisPort
+let redisUri
+
 if (environment === 'development') {
     console.log('Running in development mode');
     chatAppUrl = "/../../chat.html"
+    redisClient = new Redis();
 } else if (environment === 'production') {
     chatAppUrl = "/../../dist/chat.html"
-    console.log('Running in production mode');
+    app.use(express.static(__dirname + '/../../dist/assets'));
+    redisHost = process.env.REDIS_HOST || "localhost"
+    redisPort = process.env.REDIS_PORT || "6379"
+    redisUri = `redis://${redisHost}:${redisPort}`
+    logger.log("info",  `REDIS URI ${redisUri}`)
+    redisClient = new Redis(redisUri);
 } else {
   throw new Error("Environment needs to be set")
 }
@@ -37,15 +65,8 @@ app.use(sessionMiddleware);
 
 io.engine.use(sessionMiddleware);
 
-// GET DIRNAME
-
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // EXPRESS ROUTES
-
 
 app.get("/chat/:room/:username", (req, res) => {
   const room = req.params.room;

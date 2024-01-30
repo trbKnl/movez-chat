@@ -16,13 +16,14 @@
     "ioredis": "^5.3.2",
     "socket.io": "^4.7.2",
     "socket.io-client": "^4.7.2",
+    "vite": "^5.0.12",
     "vite-express": "*",
     "vue": "^3.3.9",
-    "vue-emoji-picker": "^1.0.3"
+    "vue-emoji-picker": "^1.0.3",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.0",
-    "nodemon": "^3.0.1",
-    "vite": "^5.0.2"
+    "nodemon": "^3.0.1"
   }
 }
