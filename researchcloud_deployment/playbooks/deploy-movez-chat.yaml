@@ -50,27 +50,30 @@
     ##################################################
     # Build and Run Next with Docker
     
-    - name: Clone Next from Github
+    - name: Clone Movez-chat from Github
       git:
-        repo: https://github.com/d3i-infra/mono
+        repo: https://github.com/trbKnl/movez-chat.git
         update: yes
-        dest: ./mono
+        dest: ./movez-chat
 
     # The env file is read by vite in the client side code
     # and is used to set the domain of the socket.io server
+    - name: Ensure the file exists
+      file:
+        path: ./movez-chat/.env
+        state: touch
+        mode: "o+r"
+
     - name: Write .env file in the root of movez chat
-      tasks:
-        - name: Add line to file with world-read permission
-          become: yes
-          lineinfile:
-            path: /
-            line: VITE_DOMAIN="{{ domain_name }}"
-            mode: "o+r"
+      lineinfile:
+        path: ./movez-chat/.env
+        state: true
+        line: VITE_DOMAIN="{{ domain_name }}"
 
     - name: Build Next with Docker build
       shell:
         cmd: docker build . -t movez-chat:latest
-        chdir: movez-chat
+        chdir: ./movez-chat
 
     - name: Create Docker Compose file
       blockinfile:
@@ -80,23 +83,24 @@
           version: "3.9"
 
           services:
-             movez-chat:
-               image: movez-chat:latest
-               environment:
-                 REDIS_HOST: redis-db
-                 REDIS_PORT: 6379
-                logging:
-                  driver: "fluentd"
-                  options:
-                    fluentd-address: 172.17.0.1:24224
-                    tag: movez-chat
-                ports:
-                  - "3000:8000"
-                restart: always
+            movez-chat:
+              image: movez-chat:latest
+              environment:
+                - REDIS_HOST=redis-db
+                - REDIS_PORT=6379
+              logging:
+                driver: "fluentd"
+                options:
+                  fluentd-address: 172.17.0.1:24224
+                  tag: movez-chat
+              ports:
+              - "3000:8000"
+              restart: always
+
             redis-db:
-               image: redis:latest
-               ports:
-                 - "6379:6379"
+              image: redis:latest
+              ports:
+              - "6379:6379"
 
     - name: Start container using the compose file
       command: docker-compose -p "movez-chat" up -d
