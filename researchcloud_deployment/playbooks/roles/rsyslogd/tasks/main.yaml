@@ -1,0 +1,11 @@
+---
+- name: Send rsyslogd logs to td-agent
+  lineinfile:
+    path: /etc/rsyslog.conf
+    line: "*.* @127.0.0.1:5140"
+
+- name: Restart rsyslogd service
+  ansible.builtin.systemd:
+    name: rsyslog.service
+    state: restarted
+    daemon_reload: true

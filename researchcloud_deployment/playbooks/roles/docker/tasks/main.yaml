@@ -1,0 +1,14 @@
+---
+- name: Get Docker install script from url
+  shell: curl -fsSL https://get.docker.com -o get-docker.sh
+
+- name: Install Docker
+  shell: docker || /bin/sh get-docker.sh
+
+- name: Get Docker Compose from Github
+  shell: sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+- name: Ensure Docker Compose is executable
+  file:
+    path: /usr/local/bin/docker-compose
+    mode: 'a+x'  # Ensure the file has executable permissions

@@ -1,0 +1,80 @@
+---
+- name: Install td-agent (a stable version of fluentd)
+  shell: curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-focal-td-agent4.sh | sh
+
+- name: Write td-agent config
+  ansible.builtin.copy:
+    dest: /etc/td-agent/td-agent.conf
+    content: |
+      # This config defines 2 sources:
+      # 1. syslog, which collects logs from nginx and the system
+      # 2. and docker logs that will be collected on port 2422
+      #
+      # Data will be written to /data/volume_2 
+      # This is the mount path of a persistent volume
+      # when added to a workspace in Surf Research Cloud.
+
+      <source>
+        @type syslog
+        port 5140
+        bind 0.0.0.0
+        tag system
+      </source>
+
+      <source>
+        @type forward
+        port 24224
+        bind 0.0.0.0
+        tag docker
+      </source>
+
+      <filter system.local7.*>
+        @type parser
+        key_name message
+        <parse>
+          @type regexp
+          # See: https://docs.fluentd.org/parser/nginx
+          # The remote key and user and agent key are not logged for privacy reasons
+          expression /^([^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "([^\"]*)"(?:\s+(?<http_x_forwarded_for>[^ ]+))?)?$/
+          time_format %d/%b/%Y:%H:%M:%S %z
+        </parse>
+      </filter>
+
+      <match system.local7.*>
+        @type file
+        path /data/volume_2/nginx.log
+        compress gzip
+        <buffer>
+          timekey 1d
+          timekey_use_utc true
+          timekey_wait 10m
+        </buffer>
+      </match>
+
+      <match system.**>
+        @type file
+        path /data/volume_2/system.log
+        compress gzip
+        <buffer>
+          timekey 1d
+          timekey_use_utc true
+          timekey_wait 10m
+        </buffer>
+      </match>
+
+      <match docker.**>
+        @type file
+        path /data/volume_2/docker.log
+        compress gzip
+        <buffer>
+          timekey 1d
+          timekey_use_utc true
+          timekey_wait 10m
+        </buffer>
+      </match>
+
+- name: Reload td-agent service
+  ansible.builtin.systemd:
+    name: td-agent.service
+    state: restarted
+    daemon_reload: true

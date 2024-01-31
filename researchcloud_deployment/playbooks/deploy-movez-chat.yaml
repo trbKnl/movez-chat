@@ -1,0 +1,104 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  gather_facts: yes
+  become: yes
+  roles:
+    - role: nginx
+      tags: nginx_tag
+    - role: td-agent
+      tags: td-agent_tag
+    - role: rsyslogd
+      tags: rsyslogd_tag
+    - role: docker
+      tags: docker_tag
+  tasks:
+
+    ##################################################
+    # Configure Nginx as a reverse proxy
+    # This configuration is dependent on the SRC-NGINX component provided by Surf
+    
+    - name: Add ansible markers in /etc/nginx/conf.d/ssl_main.conf
+      shell: perl -0 -i -pe 's/(.*server {.*?})(.*?)(listen 443.*)/\1\n# BEGIN ANSIBLE MANAGED BLOCK\n# END ANSIBLE MANAGED BLOCK\n\3/gms' /etc/nginx/conf.d/ssl_main.conf
+
+    # Configure Nginx as reverse proxy for movez-chat, see socket.io
+    # for reference
+    - name: Fill the location block of the ssl block
+      blockinfile:
+        path: /etc/nginx/conf.d/ssl_main.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          location / {
+             allow all;
+             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+             proxy_set_header Host $host;
+             proxy_pass                http://localhost:3000;
+             proxy_http_version 1.1;
+             proxy_set_header Upgrade $http_upgrade;
+             proxy_set_header Connection "upgrade";
+          }
+
+    - name: Check whether the nginx configuration is valid
+      shell: nginx -t
+
+    - name: Restart the Nginx service
+      ansible.builtin.systemd:
+        name: nginx.service
+        state: restarted
+        daemon_reload: true
+
+    ##################################################
+    # Build and Run Next with Docker
+    
+    - name: Clone Next from Github
+      git:
+        repo: https://github.com/d3i-infra/mono
+        update: yes
+        dest: ./mono
+
+    # The env file is read by vite in the client side code
+    # and is used to set the domain of the socket.io server
+    - name: Write .env file in the root of movez chat
+      tasks:
+        - name: Add line to file with world-read permission
+          become: yes
+          lineinfile:
+            path: /
+            line: VITE_DOMAIN="{{ domain_name }}"
+            mode: "o+r"
+
+    - name: Build Next with Docker build
+      shell:
+        cmd: docker build . -t movez-chat:latest
+        chdir: movez-chat
+
+    - name: Create Docker Compose file
+      blockinfile:
+        path: /docker-compose.yaml
+        create: yes
+        block: |
+          version: "3.9"
+
+          services:
+             movez-chat:
+               image: movez-chat:latest
+               environment:
+                 REDIS_HOST: redis-db
+                 REDIS_PORT: 6379
+                logging:
+                  driver: "fluentd"
+                  options:
+                    fluentd-address: 172.17.0.1:24224
+                    tag: movez-chat
+                ports:
+                  - "3000:8000"
+                restart: always
+            redis-db:
+               image: redis:latest
+               ports:
+                 - "6379:6379"
+
+    - name: Start container using the compose file
+      command: docker-compose -p "movez-chat" up -d
+      args:
+        chdir: /
