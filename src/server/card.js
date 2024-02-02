@@ -11,11 +11,21 @@ const CARDS = [
     "Message 10",
 ]
 
-export class CardGame  {
+function popRandomElement(array) {
+    if (array.length === 0) {
+      return undefined
+    }
+    const randomIndex = Math.floor(Math.random() * array.length);
+    return array.splice(randomIndex, 1)[0];
+}
+
+
+class CardGame  {
+
   constructor() {
     this.card = "blank"
     this.playedCards = []
-    this.cardsLeft = CARDS.reverse()
+    this.cardsLeft = [...CARDS.reverse()] // make a copy of the CARD array
     this.totalNumberOfCards = CARDS.length
     this.progress = 0
   }
@@ -37,6 +47,19 @@ export class CardGame  {
     return this.card
   }
 
+  nextRandomCard() {
+    const card = popRandomElement(this.cardsLeft)
+    // game ongoing
+    if (card !== undefined) {
+      this.card = card
+      this.playedCards.push(card)
+    // run out of cards
+    } else {
+      this.card = "blank"
+    }
+    return this.card
+  }
+
   currentProgress() {
     this.progress = this.playedCards.length / this.totalNumberOfCards * 100 
     return this.progress
@@ -45,7 +68,21 @@ export class CardGame  {
 }
 
 
-// var game = new CardGame()
-// game.currentCard()
-// game.nextCard()
-// game.currentProgress()
+
+//Math.random()
+//
+//CARDS.length
+//
+//var game = new CardGame()
+//
+//game.currentCard()
+//game.nextCard()
+//game.currentProgress()
+////console.log(CARDS)
+////
+////
+//game.nextRandomCard()
+//
+//var a = ["a", "b", "c"]
+//popRandomElement(a)
+//
