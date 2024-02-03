@@ -21,68 +21,101 @@ function popRandomElement(array) {
 
 
 class CardGame  {
-
-  constructor() {
-    this.card = "blank"
-    this.playedCards = []
-    this.cardsLeft = [...CARDS.reverse()] // make a copy of the CARD array
-    this.totalNumberOfCards = CARDS.length
-    this.progress = 0
+  constructor(
+      card = "blank",
+      cardsLeft = [...CARDS].reverse(),
+      totalNumberOfCards = CARDS.length,
+      progress = 0,
+  ) {
+    this.card = card
+    this.cardsLeft = cardsLeft
+    this.totalNumberOfCards = totalNumberOfCards
+    this.progress = progress
   }
 
-  currentCard() {
+  get currentCard() {
     return this.card
   }
 
-  nextCard() {
-    const card = this.cardsLeft.pop()
-    // game ongoing
-    if (card !== undefined) {
-      this.card = card
-      this.playedCards.push(card)
-    // run out of cards
+  nextCard(mode = "random") {
+    let card
+    if (mode === "random") {
+      card = popRandomElement(this.cardsLeft)
+    } else if (mode === "linear") {
+      card = this.cardsLeft.pop()
     } else {
-      this.card = "blank"
+      card = this.cardsLeft.pop()
     }
-    return this.card
-  }
-
-  nextRandomCard() {
-    const card = popRandomElement(this.cardsLeft)
-    // game ongoing
-    if (card !== undefined) {
-      this.card = card
-      this.playedCards.push(card)
-    // run out of cards
-    } else {
-      this.card = "blank"
-    }
+    this.card = card || "blank";
     return this.card
   }
 
   currentProgress() {
-    this.progress = this.playedCards.length / this.totalNumberOfCards * 100 
+    this.progress = (this.totalNumberOfCards - this.cardsLeft.length) / this.totalNumberOfCards * 100 
     return this.progress
   }
 
+  isOngoing() {
+    return this.currentProgress() !== 100
+  }
+
+  reset() {
+    this.card = "blank"
+    this.cardsLeft = [...CARDS].reverse() // make a copy of the CARD array
+    this.totalNumberOfCards = CARDS.length
+    this.progress = 0
+  }
+
+  serialize() {
+    return JSON.stringify(this)
+  }
+
+  static createFromSerialized(serializedCardGame) {
+    const {card, cardsLeft, totalNumberOfCards, progress} = JSON.parse(serializedCardGame)
+    return new CardGame(card, cardsLeft, totalNumberOfCards, progress)
+  }
 }
 
 
 
-//Math.random()
-//
-//CARDS.length
-//
 //var game = new CardGame()
 //
 //game.currentCard()
 //game.nextCard()
 //game.currentProgress()
-////console.log(CARDS)
-////
+//console.log(CARDS)
+//
 ////
 //game.nextRandomCard()
 //
 //var a = ["a", "b", "c"]
 //popRandomElement(a)
+//
+//
+//function asd(x = "asd") {
+//  console.log(x)
+//}
+//
+//asd("Asd")
+//asd()
+//
+//
+//
+
+//var game2 = new CardGame()
+//
+//game2.nextCard(mode = "linear")
+//game2.currentProgress()
+//game2.resetGame()
+//
+//var game2_serialized = game2.serialize()
+//game2_serialized
+//
+//var new_game = CardGame.createFromSerialized(game2_serialized)
+//new_game.nextCard()
+//
+//CARDS
+//
+//
+//
 //
