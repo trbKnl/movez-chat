@@ -22,10 +22,10 @@ export default {
   },
   created() {
     // Check if session exists in local storage
-    const sessionID = localStorage.getItem("sessionID");
-    if (sessionID) {
+    const sessionId = localStorage.getItem("sessionId");
+    if (sessionId) {
       this.sessionsExists = true;
-      socket.auth = { sessionID };
+      socket.auth = { sessionId };
       socket.connect();
 
     // If a sessions does not exist request one from the server
@@ -35,12 +35,12 @@ export default {
       socket.connect();
     }
 
-    // Receive sessionID from server and storge in local storage
-    socket.on("session", ({ sessionID, userID, room }) => {
-      socket.auth = { sessionID };
-      localStorage.setItem("sessionID", sessionID);
-      socket.userID = userID;
-      socket.room = room;
+    // Receive sessionId from server and storge in local storage
+    socket.on("session", ({ sessionId, userId, roomId }) => {
+      socket.auth = { sessionId };
+      localStorage.setItem("sessionId", sessionId);
+      socket.userId = userId;
+      socket.roomId = roomId;
     });
 
     socket.on("connect_error", (err) => {

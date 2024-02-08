@@ -18,9 +18,9 @@
           :class="{'message-self': message.fromSelf}"
         >
          <!-- Removed the sender's username display -->
-         <!--  <div v-if="displaySender(message, index)" class="sender">
+          <div v-if="displaySender(message, index)" class="sender">
             {{ message.fromSelf ? "You" : user.username }}
-          </div> -->
+          </div> 
 
           <div class="message-content">{{ message.content }}</div>
         </li>

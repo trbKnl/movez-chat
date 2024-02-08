@@ -1,6 +1,6 @@
 /* abstract */ class MessageStore {
   saveMessage(message) {}
-  findMessagesForUser(userID) {}
+  findMessagesForUser(userid) {}
 }
 
 export class InMemoryMessageStore extends MessageStore {
@@ -13,9 +13,9 @@ export class InMemoryMessageStore extends MessageStore {
     this.messages.push(message);
   }
 
-  findMessagesForUser(userID) {
+  findMessagesForUser(userid) {
     return this.messages.filter(
-      ({ from, to }) => from === userID || to === userID
+      ({ from, to }) => from === userid || to === userID
     );
   }
 }
@@ -39,9 +39,9 @@ export class RedisMessageStore extends MessageStore {
       .exec();
   }
 
-  findMessagesForUser(userID) {
+  findMessagesForUser(userid) {
     return this.redisClient
-      .lrange(`messages:${userID}`, 0, -1)
+      .lrange(`messages:${userid}`, 0, -1)
       .then((results) => {
         return results.map((result) => JSON.parse(result));
       });

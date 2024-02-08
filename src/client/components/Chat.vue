@@ -1,11 +1,18 @@
 <template>
   <div>
-   <div v-if="!showThankYou">
+    <!-- Overlay -->
+    <div class="overlay" v-if="showOverlay">
+      <!-- Overlay content -->
+      <div class="overlay-content">
+        <p>Waiting for chat partner</p>
+      </div>
+    </div>
+
+   <div v-else-if="!showThankYou">
     <div class="left-panel">
 
       <!-- Active Users Section -->
       <div class="users-section">
-
          <div class="header">
            <h2 class="users-header">Currently Online</h2>
            <button @click="quitGame" class="quit-game-button">
@@ -15,7 +22,7 @@
 
           <user
             v-for="user in users"
-            :key="user.userID"
+            :key="user.userId"
             :user="user"
             :selected="selectedUser === user"
             @select="onSelectUser(user)"
@@ -24,19 +31,20 @@
 
       <!-- Card Pile Section -->
       <div class="cards-section">
-        <div class="card-pile" @click="flipCard">
-          <div v-if="!cardFlipped" class="card-back"></div>
-          <div v-else class="card-front">{{ randomMessage }}</div>
+        <div class="card-pile" @click="nextCard">
+          <transition name="slide-fade" mode="out-in">
+              <div :key="randomMessage" class="card-front">
+                   {{ randomMessage }}
+              </div>
+          </transition>
         </div>
       </div>
 
       <!-- Progress Bar Section -->
       <div class="progress-bar-wrapper">
           <div class="progress-bar" ref="progressBar">
-            <!-- Your progress bar content goes here -->
-          </div>
       </div>
-
+      </div>
     </div>
 
     <message-panel
@@ -58,9 +66,7 @@
 
   <!-- End   v-if="!showThankYou" case-->
   </div>
-
-  <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
-
+    <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
   </div>
 
 </template>
@@ -78,77 +84,38 @@ export default {
     return {
       selectedUser: null,
       users: [],
-      cardFlipped: false,
+      cardFlipped: true,
       randomMessage: '',
       showDialog: false,
       shownMessages: [],
-      progressValue: 0,
       showThankYou: false,
+      showOverlay: true,
+      progressValue: 0,
       showQuitConfirmation: false,
     };
   },
   methods: {
-  async flipCard() {
-    this.cardFlipped = !this.cardFlipped;
-    if (this.cardFlipped) {
-      // Option 1: Generate message on client-side
-      this.randomMessage = this.generateRandomMessage();
-      this.updateProgress();
-      console.log('Message:', this.randomMessage)
-      // Option 2: Fetch message from server
-      // this.randomMessage = await this.fetchRandomMessageFromServer();
-    }
-  },
-  generateRandomMessage() {
-    const messages = ["Message 1", "Message 2", "Message 3","Message 4", "Message 5", "Message 6","Message 7", "Message 8", "Message 9", /* ...more messages */];
-    // Filter out messages that have already been shown
-    var availableMessages = messages.filter((message) => !this.shownMessages.includes(message));
-
-    if (availableMessages.length === 0) {
-      // All messages have been shown, reset the shownMessages array
-      this.shownMessages = [];
-      availableMessages = messages
-    }
-
-    // Select a random message from the available messages
-    const randomIndex = Math.floor(Math.random() * availableMessages.length);
-    const randomMessage = availableMessages[randomIndex];
-
-    // Add the selected message to the shownMessages array
-    this.shownMessages.push(randomMessage);
-
-    return randomMessage;
-
+    // GAME METHODS
+    nextCard() {
+      socket.emit("next card")
     },
 
-    updateProgress() {
-      // Calculate the ratio of selected messages to total messages
-      const selectedMessagesCount = this.shownMessages.length; // You should track selected messages
-      const totalMessagesCount = 9 // You should have an array of all messages
-      const ratio = (selectedMessagesCount / totalMessagesCount) * 100;
-      console.log('progress ratio', ratio)
-      // Set the progressValue to the calculated ratio
-      this.progressValue = Math.min(ratio, 100); // Ensure it doesn't exceed 100%
+    showCard(card) {
+        this.randomMessage = card
+    },
 
-      // Check if the progress is complete and add the "progress" class for styling
-      if (this.progressValue >= 100) {
-        this.progressValue = 100;
+    updateProgress(progressValue) {
+      this.progressValue = progressValue
+      if (this.$refs.progressBar !== undefined) {
+          this.$refs.progressBar.style.width = `${this.progressValue}%`;
       }
-
-      // Update the width of the progress bar
-      this.$refs.progressBar.style.width = `${this.progressValue}%`;
     },
 
-    async fetchRandomMessageFromServer() {
-      // Fetch message from server and return it
-      // Example: const response = await axios.get('/api/random-message');
-      // return response.data.message;
-    },
     onMessage(content) {
       if (this.selectedUser) {
         socket.emit("private message", {
           content,
-          to: this.selectedUser.userID,
+          to: this.selectedUser.userId,
         });
         this.selectedUser.messages.push({
           content,
@@ -156,45 +123,37 @@ export default {
         });
       }
     },
+
     onSelectUser(user) {
       this.selectedUser = user;
       user.hasNewMessages = false;
     },
+
     quitGame() {
       this.showQuitConfirmation = true;
     },
+
     confirmQuit() {
       this.showThankYou = true;
     },
+
     cancelQuit() {
       this.showQuitConfirmation = false;
     },
+
     handleSuggestion(suggestion) {
-      // Handle the suggestion submission
-      console.log('Suggestion:', suggestion);
-      // Additional logic for handling the suggestion (e.g., sending to a server)
+      socket.emit("suggestion", suggestion)
+    },
+
+    closeOverlay(nUsers) {
+      if (nUsers >= 2) {
+          this.showOverlay = false
+          socket.emit("send game update")
+      }
     }
-
-
   },
 
   created() {
-    this.$nextTick(() => {
-      this.$refs.progressBar.style.width = "0";
-    });
-
-    this.$watch(
-      () => this.users,
-      (newUsers) => {
-        // Check if there are users and no user is currently selected
-        if (newUsers.length > 0 && !this.selectedUser) {
-          // Select the first user
-          this.onSelectUser(newUsers[0]);
-        }
-      },
-      { immediate: true } // This ensures the watcher is triggered immediately with the current value
-    );
-
     socket.on("connect", () => {
       this.users.forEach((user) => {
         if (user.self) {
@@ -202,6 +161,12 @@ export default {
         }
       });
     });
+
+    // When component created ask the server for a game update
+    socket.emit("send game update")
+
+    // Check if overlay can be closed
+    this.closeOverlay(this.users.length)
 
     socket.on("disconnect", () => {
       this.users.forEach((user) => {
@@ -216,20 +181,22 @@ export default {
     };
 
     socket.on("users", (users) => {
+      this.closeOverlay(users.length)
       users.forEach((user) => {
         user.messages.forEach((message) => {
-          message.fromSelf = message.from === socket.userID;
+          message.fromSelf = message.from === socket.userId;
         });
         for (let i = 0; i < this.users.length; i++) {
           const existingUser = this.users[i];
-          if (existingUser.userID === user.userID) {
+          if (existingUser.userId === user.userId) {
             existingUser.connected = user.connected;
             existingUser.messages = user.messages;
             return;
           }
         }
-        user.self = user.userID === socket.userID;
+        user.self = user.userId === socket.userId;
         initReactiveProperties(user);
+        console.log(user)
         this.users.push(user);
       });
       // put the current user first, and sort by username
@@ -242,25 +209,26 @@ export default {
     });
 
     socket.on("user connected", (user) => {
-      console.log(`MY SOCKET ROOM ${socket.room}`)
-      console.log(`USER CONNECTED SOCKET ROOM ${user.room}`)
-      if (socket.room === user.room) {
+      console.log(`User connected to with roomId: ${socket.roomId}`)
+      console.log(`The current users room is roomId ${user.roomId}`)
+      if (socket.roomId === user.roomId) {
           for (let i = 0; i < this.users.length; i++) {
             const existingUser = this.users[i];
-            if (existingUser.userID === user.userID) {
+            if (existingUser.userId === user.userId) {
               existingUser.connected = true;
               return;
             }
           }
           initReactiveProperties(user);
           this.users.push(user);
+          this.closeOverlay(this.users.length)
      }
     });
 
     socket.on("user disconnected", (id) => {
       for (let i = 0; i < this.users.length; i++) {
         const user = this.users[i];
-        if (user.userID === id) {
+        if (user.userId === id) {
           user.connected = false;
           break;
         }
@@ -270,8 +238,8 @@ export default {
     socket.on("private message", ({ content, from, to }) => {
       for (let i = 0; i < this.users.length; i++) {
         const user = this.users[i];
-        const fromSelf = socket.userID === from;
-        if (user.userID === (fromSelf ? to : from)) {
+        const fromSelf = socket.userId === from;
+        if (user.userId === (fromSelf ? to : from)) {
           user.messages.push({
             content,
             fromSelf,
@@ -284,6 +252,15 @@ export default {
       }
     });
 
+    // GAME LISTENERS
+    socket.on("update game", ({roomId, card, progress}) => {
+        console.log(`UPDATE RECEIVED: ${roomId}, ${card}, ${progress}`)
+      if (socket.roomId === roomId) {
+        this.showCard(card)
+        this.updateProgress(progress)
+      }
+    })
+
   },
   destroyed() {
     socket.off("connect");
@@ -292,6 +269,7 @@ export default {
     socket.off("user connected");
     socket.off("user disconnected");
     socket.off("private message");
+    socket.off("update game");
   },
 };
 </script>
@@ -400,8 +378,6 @@ export default {
   .card-back {
     /* Design for the back of the card, often a pattern or solid color */
     background-image: url('/images/card.png');
-
-
   }
 
   .card-front {
@@ -473,4 +449,38 @@ export default {
  img {
    background-color: transparent;
  }
+.slide-fade-enter-active {
+  transition: all .3s ease;
+}
+
+.slide-fade-leave-active {
+  transition: all .2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
+}
+
+.slide-fade-enter,
+.slide-fade-leave-to {
+  transform: translateX(10px);
+  opacity: 0;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  z-index: 999; /* Ensure the overlay is on top of other content */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.overlay-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
 </style>

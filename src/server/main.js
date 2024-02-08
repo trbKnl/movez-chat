@@ -8,6 +8,8 @@ import ViteExpress from "vite-express";
 import session from "express-session";
 import winston  from "winston"
 
+import { CardGame } from "./cardGame.js"
+
 // START SOCKET IO SERVER
 
 const io = new Server(server)
@@ -75,10 +77,10 @@ io.engine.use(sessionMiddleware);
 
 // EXPRESS ROUTES
 
-app.get("/chat/:room/:username", (req, res) => {
-  const room = req.params.room;
+app.get("/chat/:roomId/:username", (req, res) => {
+  const roomId = req.params.roomId;
   const username = req.params.username;
-  req.session.room = room;
+  req.session.roomId = roomId;
   req.session.username = username;
   res.sendFile(resolve(__dirname + chatAppUrl));
 });
@@ -94,63 +96,68 @@ const sessionStore = new RedisSessionStore(redisClient);
 import { RedisMessageStore } from "./messageStore.js";
 const messageStore = new RedisMessageStore(redisClient);
 
-io.use(async (socket, next) => {
-  console.log(`Extracted from url: ${socket.request.session.room}`)
-  console.log(`Extracted from url: ${socket.request.session.username}`)
-  const room = socket.request.session.room
-  const username = socket.request.session.username
+import { RedisRoomStore } from "./roomStore.js";
+const roomStore = new RedisRoomStore(redisClient);
 
-  const sessionID = socket.handshake.auth.sessionID;
-  if (sessionID) {
-    console.log(`session detected: ${sessionID}`)
+
+io.use(async (socket, next) => {
+  console.log(`Extracted from url, roomId: ${socket.request.session.roomId}`)
+  console.log(`Extracted from url, username: ${socket.request.session.username}`)
+
+  const roomId = socket.request.session.roomId
+  const username = socket.request.session.username
+  const sessionId = socket.handshake.auth.sessionId;
+
+  if (sessionId) {
+    console.log(`session detected: ${sessionId}`)
     // If we can find a session restore it 
-    const session = await sessionStore.findSession(sessionID);
+    const session = await sessionStore.findSession(sessionId);
     if (session) {
-      socket.sessionID = sessionID;
-      socket.userID = session.userID;
+      socket.sessionId = sessionId;
+      socket.userId = session.userId;
       socket.username = session.username;
-      socket.room = session.room
-      console.log(`Loaded from session: ${session.username}`)
-      console.log(`Loaded from session: ${session.room}`)
+      socket.roomId = session.roomId
+      console.log(`Loaded from session, username: ${session.username}`)
+      console.log(`Loaded from session, roomId: ${session.roomId}`)
       return next();
     }
   }
-  socket.sessionID = randomId();
-  socket.userID = randomId();
+  socket.sessionId = randomId();
+  socket.userId = randomId();
   socket.username = username
-  socket.room = room
+  socket.roomId = roomId
   next();
 });
 
 io.on("connection", async (socket) => {
   // persist session
-  sessionStore.saveSession(socket.sessionID, {
-    userID: socket.userID,
+  sessionStore.saveSession(socket.sessionId, {
+    userId: socket.userId,
     username: socket.username,
     connected: true,
-    room: socket.room
+    roomId: socket.roomId
   });
 
   // emit session details
   socket.emit("session", {
-    sessionID: socket.sessionID,
-    userID: socket.userID,
-    room: socket.room
+    sessionId: socket.sessionId,
+    userId: socket.userId,
+    roomId: socket.roomId
   });
 
-  // join the "userID" room
-  socket.join(socket.userID);
+  // Join the user to a channel with userId as identifier
+  socket.join(socket.userId);
 
   // fetch existing users
   const users = [];
   const [messages, sessions] = await Promise.all([
-    messageStore.findMessagesForUser(socket.userID),
+    messageStore.findMessagesForUser(socket.userId),
     sessionStore.findAllSessions(),
   ]);
   const messagesPerUser = new Map();
   messages.forEach((message) => {
     const { from, to } = message;
-    const otherUser = socket.userID === from ? to : from;
+    const otherUser = socket.userId === from ? to : from;
     if (messagesPerUser.has(otherUser)) {
       messagesPerUser.get(otherUser).push(message);
     } else {
@@ -158,13 +165,14 @@ io.on("connection", async (socket) => {
     }
   });
 
+
   sessions.forEach((session) => {
-    if (session.room === socket.room) {
+    if (session.roomId === socket.roomId) {
       users.push({
-        userID: session.userID,
+        userId: session.userId,
         username: session.username,
         connected: session.connected,
-        messages: messagesPerUser.get(session.userID) || [],
+        messages: messagesPerUser.get(session.userId) || [],
       });
     }
   });
@@ -172,9 +180,9 @@ io.on("connection", async (socket) => {
 
   // notify existing users
   socket.broadcast.emit("user connected", {
-    userID: socket.userID,
+    userId: socket.userId,
     username: socket.username,
-    room: socket.room,
+    roomId: socket.roomId,
     connected: true,
     messages: [],
   });
@@ -183,35 +191,104 @@ io.on("connection", async (socket) => {
   socket.on("private message", ({ content, to }) => {
     const message = {
       content,
-      from: socket.userID,
+      from: socket.userId,
       to,
     };
     logger.log("info", {
-      "room": `${socket.room}`, 
+      "roomId": `${socket.roomId}`, 
       "user": `${socket.username}`,
       "message": `${JSON.stringify(message)}`,
     })
-    socket.to(to).to(socket.userID).emit("private message", message);
+    socket.to(to).to(socket.userId).emit("private message", message);
     messageStore.saveMessage(message);
   });
 
   // notify users upon disconnection
   socket.on("disconnect", async () => {
-    const matchingSockets = await io.in(socket.userID).allSockets();
+    const matchingSockets = await io.in(socket.userId).allSockets();
     const isDisconnected = matchingSockets.size === 0;
     if (isDisconnected) {
       // notify other users
-      socket.broadcast.emit("user disconnected", socket.userID);
+      socket.broadcast.emit("user disconnected", socket.userId);
       // update the connection status of the session
-      sessionStore.saveSession(socket.sessionID, {
-        userID: socket.userID,
+      sessionStore.saveSession(socket.sessionId, {
+        userId: socket.userId,
         username: socket.username,
         connected: false,
-        room: socket.room
+        roomId: socket.roomId
       });
     }
   });
+
+  // GAME LOGIC
+  socket.join(socket.roomId);
+
+  socket.on("send game update", async () => {
+    let cardGame = await loadGame(socket.roomId)
+    logGame(cardGame)
+    console.log(socket.roomId)
+    io.to(socket.roomId).emit("update game", {  // notice the use of io instead of socket
+      roomId: socket.roomId, 
+      card: cardGame.card,
+      progress: cardGame.progress,
+    })
+  })
+
+  socket.on("next card", async () => {
+    let cardGame = await loadGame(socket.roomId)
+    cardGame.nextCard()
+    io.to(socket.roomId).emit("update game", {
+      roomId: socket.roomId, 
+      card: cardGame.card,
+      progress: cardGame.progress,
+    })
+    saveGame(socket.roomId, cardGame)
+  })
+
+  // LOG SUGGESTION
+  socket.on("suggestion", (suggestion) => { 
+    logger.log("info", {
+      "roomId": `${socket.roomId}`, 
+      "user": `${socket.username}`,
+      "suggestion": suggestion,
+    })
+  })
+
+
 });
+
+
+function saveGame(roomId, cardGame) {
+    roomStore.saveRoom(roomId, { cardGame: cardGame.serialize() })
+}
+
+
+async function loadGame(roomId) {
+  /* Try to load the game from the roomStore 
+   * If no game can be found, create a game and store it in the roomStore
+   * returns cardGame object, see cardGame.js
+   */
+  let cardGame
+  let room = await roomStore.findRoom(roomId)
+  if (!room) {
+    cardGame = new CardGame()
+    saveGame(roomId, cardGame)
+  } else {
+    cardGame = CardGame.createFromSerialized(room.cardGame)
+    console.log(cardGame)
+  }
+  return cardGame
+}
+
+function updateGame(socket, cardGame) {
+  console.log("Game update")
+  socket.emit("update game", cardGame)
+}
+
+function logGame(cardGame) {
+  console.log(`${JSON.stringify(cardGame)}`)
+}
+
 
 
 // START SERVER
