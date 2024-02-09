@@ -25,7 +25,7 @@
             :key="user.userId"
             :user="user"
             :selected="selectedUser === user"
-            @select="onSelectUser(user)"
+            @select="setActiveUser(user)"
           />
       </div>
 
@@ -95,7 +95,6 @@ export default {
     };
   },
   methods: {
-    // GAME METHODS
     nextCard() {
       socket.emit("next card")
     },
@@ -124,9 +123,11 @@ export default {
       }
     },
 
-    onSelectUser(user) {
-      this.selectedUser = user;
-      user.hasNewMessages = false;
+    setActiveUser(user) {
+      if (user.self === false) {
+        this.selectedUser = user;
+        user.hasNewMessages = false;
+      }
     },
 
     quitGame() {
@@ -152,7 +153,6 @@ export default {
       }
     }
   },
-
   created() {
     socket.on("connect", () => {
       this.users.forEach((user) => {
@@ -165,9 +165,6 @@ export default {
     // When component created ask the server for a game update
     socket.emit("send game update")
 
-    // Check if overlay can be closed
-    this.closeOverlay(this.users.length)
-
     socket.on("disconnect", () => {
       this.users.forEach((user) => {
         if (user.self) {
@@ -176,11 +173,16 @@ export default {
       });
     });
 
+    // Check if overlay can be closed upon creation
+    this.closeOverlay(this.users.length)
+
     const initReactiveProperties = (user) => {
       user.hasNewMessages = false;
     };
 
+    // USER CONNECTION EVENTS LISTENERS
     socket.on("users", (users) => {
+      console.log("USERS EVENT")
       this.closeOverlay(users.length)
       users.forEach((user) => {
         user.messages.forEach((message) => {
@@ -196,7 +198,7 @@ export default {
         }
         user.self = user.userId === socket.userId;
         initReactiveProperties(user);
-        console.log(user)
+        this.setActiveUser(user)
         this.users.push(user);
       });
       // put the current user first, and sort by username
@@ -209,6 +211,7 @@ export default {
     });
 
     socket.on("user connected", (user) => {
+      console.log("USER CONNECTED EVENT")
       console.log(`User connected to with roomId: ${socket.roomId}`)
       console.log(`The current users room is roomId ${user.roomId}`)
       if (socket.roomId === user.roomId) {
@@ -220,6 +223,7 @@ export default {
             }
           }
           initReactiveProperties(user);
+          this.setActiveUser(user)
           this.users.push(user);
           this.closeOverlay(this.users.length)
      }
@@ -252,9 +256,9 @@ export default {
       }
     });
 
-    // GAME LISTENERS
+    // GAME EVENT LISTENERS
     socket.on("update game", ({roomId, card, progress}) => {
-        console.log(`UPDATE RECEIVED: ${roomId}, ${card}, ${progress}`)
+      console.log(`UPDATE RECEIVED: ${roomId}, ${card}, ${progress}`)
       if (socket.roomId === roomId) {
         this.showCard(card)
         this.updateProgress(progress)

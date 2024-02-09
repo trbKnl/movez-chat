@@ -1,12 +1,14 @@
 import express from 'express';
-const app = express();
 import http from 'http';
+const app = express();
 const server = http.createServer(app);
 import { Server } from "socket.io";
 import Redis from "ioredis";
 import ViteExpress from "vite-express";
 import session from "express-session";
 import winston  from "winston"
+import crypto from "crypto";
+const randomId = () => crypto.randomBytes(8).toString("hex");
 
 import { CardGame } from "./cardGame.js"
 
@@ -27,12 +29,12 @@ const logger = winston.createLogger({
     ]
 });
 
+
 // GET DIRNAME
 
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
 
 // SETUP PRODUCTION AND DEVELOPMENT
 
@@ -85,10 +87,7 @@ app.get("/chat/:roomId/:username", (req, res) => {
   res.sendFile(resolve(__dirname + chatAppUrl));
 });
 
-// SOCKET IO SERVER
-
-import crypto from "crypto";
-const randomId = () => crypto.randomBytes(8).toString("hex");
+// INITIALIZE REDIS STORAGE
 
 import { RedisSessionStore } from "./sessionStore.js";
 const sessionStore = new RedisSessionStore(redisClient);
@@ -99,6 +98,7 @@ const messageStore = new RedisMessageStore(redisClient);
 import { RedisRoomStore } from "./roomStore.js";
 const roomStore = new RedisRoomStore(redisClient);
 
+// SOCKET IO SERVER
 
 io.use(async (socket, next) => {
   console.log(`Extracted from url, roomId: ${socket.request.session.roomId}`)
@@ -184,6 +184,7 @@ io.on("connection", async (socket) => {
     username: socket.username,
     roomId: socket.roomId,
     connected: true,
+    self: false,
     messages: [],
   });
 
@@ -194,11 +195,7 @@ io.on("connection", async (socket) => {
       from: socket.userId,
       to,
     };
-    logger.log("info", {
-      "roomId": `${socket.roomId}`, 
-      "user": `${socket.username}`,
-      "message": `${JSON.stringify(message)}`,
-    })
+    logger.log("info", { "roomId": `${socket.roomId}`, "user": `${socket.username}`, "message": `${JSON.stringify(message)}`, })
     socket.to(to).to(socket.userId).emit("private message", message);
     messageStore.saveMessage(message);
   });
@@ -220,13 +217,11 @@ io.on("connection", async (socket) => {
     }
   });
 
-  // GAME LOGIC
+  // GAME EVENTS
   socket.join(socket.roomId);
 
   socket.on("send game update", async () => {
     let cardGame = await loadGame(socket.roomId)
-    logGame(cardGame)
-    console.log(socket.roomId)
     io.to(socket.roomId).emit("update game", {  // notice the use of io instead of socket
       roomId: socket.roomId, 
       card: cardGame.card,
@@ -242,26 +237,21 @@ io.on("connection", async (socket) => {
       card: cardGame.card,
       progress: cardGame.progress,
     })
+    logger.log("info", { "roomId": `${socket.roomId}`, "user": `${socket.username}`, "card": `${cardGame.card}`})
     saveGame(socket.roomId, cardGame)
   })
 
-  // LOG SUGGESTION
+  // LOG SUGGESTION EVENT
   socket.on("suggestion", (suggestion) => { 
-    logger.log("info", {
-      "roomId": `${socket.roomId}`, 
-      "user": `${socket.username}`,
-      "suggestion": suggestion,
-    })
+    logger.log("info", { "roomId": `${socket.roomId}`, "user": `${socket.username}`, "suggestion": suggestion, })
   })
-
-
 });
 
 
+// GAME FUNCTIONS
 function saveGame(roomId, cardGame) {
     roomStore.saveRoom(roomId, { cardGame: cardGame.serialize() })
 }
-
 
 async function loadGame(roomId) {
   /* Try to load the game from the roomStore 
@@ -275,21 +265,13 @@ async function loadGame(roomId) {
     saveGame(roomId, cardGame)
   } else {
     cardGame = CardGame.createFromSerialized(room.cardGame)
-    console.log(cardGame)
   }
   return cardGame
-}
-
-function updateGame(socket, cardGame) {
-  console.log("Game update")
-  socket.emit("update game", cardGame)
 }
 
 function logGame(cardGame) {
   console.log(`${JSON.stringify(cardGame)}`)
 }
-
-
 
 // START SERVER
 
