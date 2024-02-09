@@ -130,6 +130,7 @@ io.use(async (socket, next) => {
 });
 
 io.on("connection", async (socket) => {
+
   // persist session
   sessionStore.saveSession(socket.sessionId, {
     userId: socket.userId,
@@ -147,6 +148,9 @@ io.on("connection", async (socket) => {
 
   // Join the user to a channel with userId as identifier
   socket.join(socket.userId);
+
+  // log connection
+  logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "state": "connected"})
 
   // fetch existing users
   const users = [];
@@ -214,6 +218,7 @@ io.on("connection", async (socket) => {
         connected: false,
         roomId: socket.roomId
       });
+    logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "state": "disconnected"})
     }
   });
 
@@ -237,7 +242,7 @@ io.on("connection", async (socket) => {
       card: cardGame.card,
       progress: cardGame.progress,
     })
-    logger.log("info", { "roomId": `${socket.roomId}`, "user": `${socket.username}`, "card": `${cardGame.card}`})
+    logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "card": `${cardGame.card}`, "progress": `${cardGame.progress}`})
     saveGame(socket.roomId, cardGame)
   })
 
