@@ -5,7 +5,6 @@
 </template>
 
 <script>
-import SelectUsername from "./components/SelectUsername.vue";
 import Chat from "./components/Chat.vue";
 import socket from "./socket";
 
@@ -13,7 +12,6 @@ export default {
   name: "App",
   components: {
     Chat,
-    SelectUsername,
   },
   data() {
     return {
