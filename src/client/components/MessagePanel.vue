@@ -14,7 +14,7 @@
     <!-- Middle item that takes up the remaining space -->
     <div class="flex-1 overflow-auto bg-gray-300 mb-10 mt-10 center" ref="messagesContainer">
       <div class="flex items-center justify-center">
-      <div class="m-5 p-3 bg-white w-full">
+      <div class="m-5 p-3 w-full mx-4 my-4">
         <ul class="flex flex-col">
           <li
             v-for="(message, index) in user.messages"

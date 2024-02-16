@@ -34,7 +34,6 @@
             />
         </div>
 
-
         <div class="flex flex-col items-center justify-center">
           <!-- Card Pile Section -->
           <div class="w-64 h-72 text-black border border-gray-300 shadow-md rounded-lg flex items-center justify-center text-center mb-4">
