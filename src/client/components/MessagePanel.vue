@@ -1,51 +1,58 @@
 <template>
-<div class="chat-container">
-  <div class="header">
-  <!-- <status-icon :connected="user.connected" />
-   <div class="username">{{ user.username }}</div> -->
-    <div class="avatar-container"  @mouseover="showTip = true"
-         @mouseleave="showTip = false">
-      <img src="/public/images/movez.png" alt="Avatar" class="avatar" />
+
+  <div class="flex flex-col h-screen relative">
+    <!-- Top item with fixed height -->
+    <div class="h-25">
+      <div class="header">
+        <div class="avatar-container"  @mouseover="showTip = true"
+             @mouseleave="showTip = false">
+          <img src="/public/images/movez.png" alt="Avatar" class="avatar" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle item that takes up the remaining space -->
+    <div class="flex-1 overflow-auto bg-gray-300 mb-10 mt-10 center" ref="messagesContainer">
+      <div class="flex items-center justify-center">
+      <div class="m-5 p-3 bg-white w-full">
+        <ul class="flex flex-col">
+          <li
+            v-for="(message, index) in user.messages"
+            :key="index"
+            class="bg-purple-800 text-white py-2 px-3 rounded-lg max-w-max max-h-max self-start ml-5 m-1 p-10"
+            :class="{'bg-purple-400 self-end mr-5': message.fromSelf}"
+          >
+           <!-- Removed the sender's username display -->
+            <div v-if="displaySender(message, index)" class="sender">
+              {{ message.fromSelf ? "You" : user.username }}
+            </div> 
+
+            <div class="message-content">{{ message.content }}</div>
+          </li>
+        </ul>
+      </div>
+      </div>
+    </div>
+
+    <!-- Bottom item with fixed height -->
+    <div class="h-25 bg-gray-100">
+      <form @submit.prevent="onSubmit" class="flex items-center justify-between bg-gray-100 p-4 rounded-lg" >
+        <textarea 
+          v-model="input"
+          placeholder="Your message..." 
+          class="flex-1 mr-2 py-2 px-4 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 resize-none"
+          @keydown="handleKeydown"
+        />
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg focus:outline-none">Send</button>
+      </form>
     </div>
   </div>
 
-    <div class="content" ref="messagesContainer">
-      <ul class="messages">
-        <li
-          v-for="(message, index) in user.messages"
-          :key="index"
-          class="message"
-          :class="{'message-self': message.fromSelf}"
-        >
-         <!-- Removed the sender's username display -->
-          <div v-if="displaySender(message, index)" class="sender">
-            {{ message.fromSelf ? "You" : user.username }}
-          </div> 
-
-          <div class="message-content">{{ message.content }}</div>
-        </li>
-      </ul>
-    </div>
-
-    <form @submit.prevent="onSubmit" class="form">
-      <textarea
-        v-model="input"
-        placeholder="Your message..."
-        class="input"
-        @keydown="handleKeydown"
-      ></textarea>
-      <button :disabled="!isValid" class="send-button">
-        <i class="fas fa-paper-plane"></i> Send
-      </button>
-    </form>
 
     <div v-if="showTip" class="chat-tip">
       Here's a tip on how to conduct a conversation...
     </div>
-
-  </div>
 </template>
-
 
 
 
@@ -180,7 +187,6 @@ background-color: #f5f5f5;
   display: block; /* Allows bubble to fit content */
   max-width:  fit-content; /* Maximum width to prevent overly wide bubbles */
 }
-
 
 
 .message-self {

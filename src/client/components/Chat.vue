@@ -1,58 +1,72 @@
 <template>
   <div>
-    <!-- Overlay -->
-    <div class="overlay" v-if="showOverlay">
-      <!-- Overlay content -->
-      <div class="overlay-content">
-        <p>Waiting for chat partner</p>
-      </div>
+
+    <!-- Full Screen Overlay -->
+    <div v-if="showOverlay" class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50">
+    <div class="absolute w-full h-full bg-gray-800 opacity-50"></div> 
+    <div class="z-50 text-center">
+        <div class="bg-white p-8 rounded-lg shadow-lg">
+            <img src="/public/images/movez.png" alt="Avatar"  class="mx-auto mb-2 w-16 h-16"  />
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Waiting for your chat partner<span id="dots" class="ml-1">...</span></h2>
+        </div>
+    </div>
     </div>
 
    <div v-else-if="!showThankYou">
-    <div class="left-panel">
+    <div class="flex">
+      <div class="w-1/3 h-screen bg-gray-200">
+        <!-- Left Panel Content -->
+        <!-- Active Users Section -->
+        <div class="users-section">
+           <div class="header">
+             <h2 class="users-header">Currently Online</h2>
+             <button @click="quitGame" class="quit-game-button">
+                 <img src="/public/images/quit.png" alt="Quit" />
+               </button>
+          </div>
 
-      <!-- Active Users Section -->
-      <div class="users-section">
-         <div class="header">
-           <h2 class="users-header">Currently Online</h2>
-           <button @click="quitGame" class="quit-game-button">
-               <img src="/public/images/quit.png" alt="Quit" />
-             </button>
+            <user
+              v-for="user in users"
+              :key="user.userId"
+              :user="user"
+              :selected="selectedUser === user"
+              @select="setActiveUser(user)"
+            />
         </div>
 
-          <user
-            v-for="user in users"
-            :key="user.userId"
-            :user="user"
-            :selected="selectedUser === user"
-            @select="setActiveUser(user)"
-          />
-      </div>
 
-      <!-- Card Pile Section -->
-      <div class="cards-section">
-        <div class="card-pile" @click="nextCard">
-          <transition name="slide-fade" mode="out-in">
-              <div :key="randomMessage" class="card-front">
-                   {{ randomMessage }}
+        <div class="flex flex-col items-center justify-center">
+          <!-- Card Pile Section -->
+          <div class="w-64 h-72 text-black border border-gray-300 shadow-md rounded-lg flex items-center justify-center text-center mb-4">
+            <div class="card-pile" @click="nextCard">
+              <transition name="slide-fade" mode="out-in">
+                <div :key="randomMessage" class="card-front p-4">
+                  {{ randomMessage }}
+                </div>
+              </transition>
+            </div>
+          </div>
+
+          <div class="border border-gray-500 p-2 w-64 rounded-lg">
+            <!-- Progress Bar Container -->
+            <div class="bg-gray-200 rounded-full h-8 overflow-hidden">
+              <!-- Progress Bar -->
+              <div :style="{ width: progressValue + '%' }" class="bg-blue-600 h-full">
               </div>
-          </transition>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Progress Bar Section -->
-      <div class="progress-bar-wrapper">
-          <div class="progress-bar" ref="progressBar">
-      </div>
+    </div>
+    <div class="w-2/3 h-screen bg-gray-300 relative">
+      <!-- Right Panel Content -->
+        <message-panel
+          v-if="selectedUser"
+          :user="selectedUser"
+          @input="onMessage"
+      />
       </div>
     </div>
-
-    <message-panel
-      v-if="selectedUser"
-      :user="selectedUser"
-      @input="onMessage"
-      class="right-panel"
-    />
 
     <!-- Quit Confirmation Modal -->
     <div v-if="showQuitConfirmation" class="modal">
@@ -279,22 +293,34 @@ export default {
 </script>
 
 <style scoped>
+  @keyframes pulse {
+      0%, 100% {
+          opacity: 1;
+      }
+      50% {
+          opacity: 0;
+      }
+  }
+  #dots {
+      animation: pulse 1.5s infinite;
+  }
+
 
 .right-panel {
     margin-left: 360px;
   }
 
-  .left-panel {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 360px;
-    display: flex;
-    flex-direction: column;
-    background-color: #3f0e40;
-    color: white;
-  }
+.left-panel {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  background-color: #3f0e40;
+  color: white;
+}
 
   .header {
       display: flex;
@@ -384,25 +410,25 @@ export default {
     background-image: url('/images/card.png');
   }
 
-  .card-front {
-    /* Design for the front of the card */
-    font-size: 25px; /* Adjust as needed */
-    /* Add indices (e.g., number and suit) in the corners */
-    &:before, &:after {
-      content: 'A ♠'; /* Example: Ace of Spades */
-      position: absolute;
-      font-size: 24px; /* Smaller font size for indices */
-    }
-    &:before {
-      top: 10px; /* Position at top-left corner */
-      left: 10px;
-    }
-    &:after {
-      bottom: 10px; /* Position at bottom-right corner */
-      right: 10px;
-      transform: rotate(180deg); /* Upside-down for bottom-right */
-    }
-  }
+  /*.card-front { */
+  /*  /* Design for the front of the card */
+  /*  font-size: 25px; /* Adjust as needed */
+  /*  /* Add indices (e.g., number and suit) in the corners */
+  /*  &:before, &:after {*/
+  /*    content: 'A ♠'; /* Example: Ace of Spades */
+  /*    position: absolute;*/
+  /*    font-size: 24px; /* Smaller font size for indices */
+  /*  }*/
+  /*  &:before {*/
+  /*    top: 10px; /* Position at top-left corner */
+  /*    left: 10px;*/
+  /*  }*/
+  /*  &:after {*/
+  /*    bottom: 10px; /* Position at bottom-right corner */
+  /*    right: 10px;*/
+  /*    transform: rotate(180deg); /* Upside-down for bottom-right */
+  /*  }*/
+  /*}*/
 
   .progress-bar-wrapper {
     position: absolute;
