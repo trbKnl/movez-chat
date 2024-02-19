@@ -6,7 +6,7 @@
     <div class="absolute w-full h-full bg-gray-800 opacity-50"></div> 
     <div class="z-50 text-center">
         <div class="bg-white p-8 rounded-lg shadow-lg">
-            <img src="/public/images/movez.png" alt="Avatar"  class="mx-auto mb-2 w-16 h-16"  />
+            <img src="/public/images/movez.png" alt="Avatar"  class="mx-auto mb-2 w-16 h-16" />
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Waiting for your chat partner<span id="dots" class="ml-1">...</span></h2>
         </div>
     </div>
@@ -33,36 +33,7 @@
             />
         </div>
 
-        <div class="flex flex-col items-center justify-center mt-10">
-          <!-- Card Pile Section -->
-
-            <div class="container mx-auto hover:cursor-pointer" @click="nextCard">
-              <div class="bg-white shadow-lg rounded-lg overflow-hidden m-4">
-                <div class="px-4 py-2 md:min-h-64">
-                  <h2 class="text-gray-800 text-xl font-semibold">Discussion Topic</h2>
-                  <transition name="slide-fade" mode="out-in">
-                  <p :key="randomMessage" class="text-gray-600 flex justify-between items-center font-semibold">
-                    {{ randomMessage }} 
-                  </p>
-                  </transition>
-                </div>
-                <div class="flex items-center justify-between px-4 py-2 bg-gray-900">
-                  <p class="text-gray-200">Click for the next topic</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="container mx-auto">
-          <div class="border border-gray-500 rounded-lg mr-4 ml-4">
-            <!-- Progress Bar Container -->
-            <div class="bg-gray-200 rounded-full h-8 overflow-hidden m-4">
-              <!-- Progress Bar -->
-              <div :style="{ width: progressValue + '%' }" class="bg-blue-600 h-full">
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
+        <card />
 
     </div>
     <div class="w-2/3">
@@ -97,10 +68,11 @@ import socket from "../socket";
 import User from "./User.vue";
 import MessagePanel from "./MessagePanel.vue";
 import ThankYou from './ThankYou.vue';
+import Card from './Card.vue';
 
 export default {
   name: "Chat",
-  components: { User, MessagePanel, ThankYou },
+  components: { User, MessagePanel, ThankYou, Card },
   data() {
     return {
       selectedUser: null,
@@ -310,40 +282,6 @@ export default {
   }
   #dots {
       animation: pulse 1.5s infinite;
-  }
-
-  .card-pile {
-     cursor: pointer;
-     perspective: 1000px;
-     width: 200px; /* Increased by 20% */
-     height: 290px; /* Increased by 20% */
-     position: relative;
-     background-color: #FFF;
-     color: black;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     text-align: center;
-     font-size: 20px;
-     border: 1px solid #ddd; /* Add border */
-     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); /* Add shadow for depth */
-     border-radius: 8px; /* Optional: rounded corners */
-     transform-style: preserve-3d;
-
-   }
-
-  .slide-fade-enter-active {
-    transition: all .3s ease;
-  }
-
-  .slide-fade-leave-active {
-    transition: all .2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-  }
-
-  .slide-fade-enter,
-  .slide-fade-leave-to {
-    transform: translateX(10px);
-    opacity: 0;
   }
 
 

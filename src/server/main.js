@@ -251,11 +251,12 @@ io.on("connection", async (socket) => {
 
   socket.on("next card", async () => {
     let cardGame = await loadGame(socket.roomId)
+    const progress = cardGame.currentProgress()
     cardGame.nextCard()
     io.to(socket.roomId).emit("update game", {
       roomId: socket.roomId, 
       card: cardGame.card,
-      progress: cardGame.progress,
+      progress: progress,
     })
     logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "card": `${cardGame.card}`, "progress": `${cardGame.progress}`})
     saveGame(socket.roomId, cardGame)

@@ -1,5 +1,8 @@
 <template>
-  <div class="user" @click="onClick" :class="{ selected: selected }">
+  <div class="user rounded-lg" 
+       @click="onClick" 
+       :class="{'bg-gray-100': selected}"
+  >
     <div class="description">
       <div class="name">
         {{ user.self ? "You" : user.username }}
@@ -14,6 +17,7 @@
 
 <script>
 import StatusIcon from "./StatusIcon.vue";
+
 export default {
   name: "User",
   components: { StatusIcon },
@@ -36,29 +40,26 @@ export default {
 </script>
 
 <style scoped>
-.selected {
-  background-color: #1164a3;
-}
 
-.user {
-  padding: 10px;
-}
-
-.description {
-  display: inline-block;
-}
-
-.status {
-  color: #92959e;
-}
-
-.new-messages {
-  color: white;
-  background-color: red;
-  width: 20px;
-  border-radius: 5px;
-  text-align: center;
-  float: right;
-  margin-top: 10px;
-}
+ .user {
+   padding: 10px;
+ }
+ 
+ .description {
+   display: inline-block;
+ }
+ 
+ .status {
+   color: #92959e;
+ }
+ 
+ .new-messages {
+   color: white;
+   background-color: red;
+   width: 20px;
+   border-radius: 5px;
+   text-align: center;
+   float: right;
+   margin-top: 10px;
+ }
 </style>

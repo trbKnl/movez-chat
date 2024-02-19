@@ -12,16 +12,15 @@ const CARDS = [
 ]
 
 const startCard = "Click to start the game"
-const endCard = "Game is finished, click if you want to restart the game"
+const endCard = "Game is finished, click if you want to restart the game 🎉"
 
 function popRandomElement(array) {
-    if (array.length === 0) {
-      return undefined
-    }
-    const randomIndex = Math.floor(Math.random() * array.length);
-    return array.splice(randomIndex, 1)[0];
+  if (array.length === 0) {
+    return undefined
+  }
+  const randomIndex = Math.floor(Math.random() * array.length);
+  return array.splice(randomIndex, 1)[0];
 }
-
 
 export class CardGame  {
   constructor(
@@ -42,9 +41,6 @@ export class CardGame  {
 
   nextCard(mode = "random") {
     let card
-    if (this.card === endCard) {
-      this.reset()
-    }
     if (mode === "random") {
       card = popRandomElement(this.cardsLeft)
     } else if (mode === "linear") {
@@ -52,8 +48,10 @@ export class CardGame  {
     } else {
       card = this.cardsLeft.pop()
     }
-    this.card = card || endCard
-    this.currentProgress()
+    this.card = card
+    if (this.card === undefined) {
+      this.reset()
+    }
     return this.card
   }
 
@@ -67,7 +65,7 @@ export class CardGame  {
   }
 
   reset() {
-    this.card = startCard
+    this.card = endCard
     this.cardsLeft = [...CARDS].reverse() // make a copy of the CARD array
     this.totalNumberOfCards = CARDS.length
     this.progress = 0
