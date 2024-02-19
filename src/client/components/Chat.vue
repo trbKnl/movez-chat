@@ -14,17 +14,16 @@
 
    <div v-else-if="!showThankYou">
     <div class="flex">
-      <div class="w-1/3 h-screen bg-gray-200">
+      <div class="w-1/3 bg-gray-300">
         <!-- Left Panel Content -->
         <!-- Active Users Section -->
-        <div class="users-section">
-           <div class="header">
-             <h2 class="users-header">Currently Online</h2>
-             <button @click="quitGame" class="quit-game-button">
-                 <img src="/public/images/quit.png" alt="Quit" />
+        <div class="p-3">
+           <div class="flex items-center justify-between p-4">
+             <h2 class="font-semibold">Currently Online</h2>
+             <button @click="quitGame" class="w-8 h-auto">
+                 <img src="/public/images/exit.svg" alt="Quit" />
                </button>
           </div>
-
             <user
               v-for="user in users"
               :key="user.userId"
@@ -34,30 +33,39 @@
             />
         </div>
 
-        <div class="flex flex-col items-center justify-center">
+        <div class="flex flex-col items-center justify-center mt-10">
           <!-- Card Pile Section -->
-          <div class="w-64 h-72 text-black border border-gray-300 shadow-md rounded-lg flex items-center justify-center text-center mb-4">
-            <div class="card-pile" @click="nextCard">
-              <transition name="slide-fade" mode="out-in">
-                <div :key="randomMessage" class="card-front p-4">
-                  {{ randomMessage }}
-                </div>
-              </transition>
-            </div>
-          </div>
 
-          <div class="border border-gray-500 p-2 w-64 rounded-lg">
+            <div class="container mx-auto hover:cursor-pointer" @click="nextCard">
+              <div class="bg-white shadow-lg rounded-lg overflow-hidden m-4">
+                <div class="px-4 py-2 md:min-h-64">
+                  <h2 class="text-gray-800 text-xl font-semibold">Discussion Topic</h2>
+                  <transition name="slide-fade" mode="out-in">
+                  <p :key="randomMessage" class="text-gray-600 flex justify-between items-center font-semibold">
+                    {{ randomMessage }} 
+                  </p>
+                  </transition>
+                </div>
+                <div class="flex items-center justify-between px-4 py-2 bg-gray-900">
+                  <p class="text-gray-200">Click for the next topic</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="container mx-auto">
+          <div class="border border-gray-500 rounded-lg mr-4 ml-4">
             <!-- Progress Bar Container -->
-            <div class="bg-gray-200 rounded-full h-8 overflow-hidden">
+            <div class="bg-gray-200 rounded-full h-8 overflow-hidden m-4">
               <!-- Progress Bar -->
               <div :style="{ width: progressValue + '%' }" class="bg-blue-600 h-full">
               </div>
+            </div>
             </div>
           </div>
         </div>
 
     </div>
-    <div class="w-2/3 h-screen bg-gray-300 relative">
+    <div class="w-2/3">
       <!-- Right Panel Content -->
         <message-panel
           v-if="selectedUser"
@@ -304,65 +312,6 @@ export default {
       animation: pulse 1.5s infinite;
   }
 
-
-.right-panel {
-    margin-left: 360px;
-  }
-
-.left-panel {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 360px;
-  display: flex;
-  flex-direction: column;
-  background-color: #3f0e40;
-  color: white;
-}
-
-  .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px;
-    }
-
-    .users-header {
-      margin: 0;
-      /* Additional styling for the header text */
-    }
-
-    .quit-game-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.quit-game-button img {
-  width: 30px; /* Adjust size as needed */
-  height: auto;
-}
-
-  .users-section {
-    overflow-y: auto;
-    margin: 20px;
-    flex: 0 0 30%;
-    /* Other styling as needed */
-  }
-
-  .cards-section {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex: 0 0 50%;
-  }
-
   .card-pile {
      cursor: pointer;
      perspective: 1000px;
@@ -383,133 +332,19 @@ export default {
 
    }
 
-   .card-pile:hover {
-     cursor: pointer; /* Hand pointer on hover */
-   }
-
-   .card-back, .card-front {
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    border-radius: 10px; /* Rounded corners typical of playing cards */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
-    border: 5px solid #000; /* Black border */
-
-    background-color: #FFF; /* White background */
-    display: flex;
-    color: black;
-    align-items: center;
-    justify-content: center;
-    backface-visibility: hidden;
-    transition: transform 0.6s;
+  .slide-fade-enter-active {
+    transition: all .3s ease;
   }
 
-  .card-back {
-    /* Design for the back of the card, often a pattern or solid color */
-    background-image: url('/images/card.png');
+  .slide-fade-leave-active {
+    transition: all .2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
   }
 
-  /*.card-front { */
-  /*  /* Design for the front of the card */
-  /*  font-size: 25px; /* Adjust as needed */
-  /*  /* Add indices (e.g., number and suit) in the corners */
-  /*  &:before, &:after {*/
-  /*    content: 'A ♠'; /* Example: Ace of Spades */
-  /*    position: absolute;*/
-  /*    font-size: 24px; /* Smaller font size for indices */
-  /*  }*/
-  /*  &:before {*/
-  /*    top: 10px; /* Position at top-left corner */
-  /*    left: 10px;*/
-  /*  }*/
-  /*  &:after {*/
-  /*    bottom: 10px; /* Position at bottom-right corner */
-  /*    right: 10px;*/
-  /*    transform: rotate(180deg); /* Upside-down for bottom-right */
-  /*  }*/
-  /*}*/
-
-  .progress-bar-wrapper {
-    position: absolute;
-    bottom: 15%; /* Adjust the position as needed */
-    left: 5%;
-    width: 90%;
-    flex: 0 0 20%;
-    background-color: white;
-    height: 3rem;
-    border-radius: 10px; /* Add rounded corners */
-    border: 3px solid #fff; /* Black border */
+  .slide-fade-enter,
+  .slide-fade-leave-to {
+    transform: translateX(10px);
+    opacity: 0;
   }
 
-  .progress-bar {
-    position: absolute;
-    bottom: 10%; /* Move 10% from the bottom */
-    width: 100%; /* Adjust the width as needed */
-    background-color: #3f0e40;
-    height: 2.4rem;
-    border-radius: 10px; /* Add rounded corners */
-    flex: 0 0 30%;
-    transition: width 0.5s, background-color 0.5s; /* Transition width and background-color */
-
-  }
-  .progress {
-    background-color: #3f0e40; /* Blue color for progress */
-  }
-
-  .modal {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-   display: flex;
-   align-items: center;
-   justify-content: center;
- }
-
- .modal-content {
-   background-color: white;
-   padding: 20px;
-   border-radius: 5px;
-   text-align: center;
- }
-
- img {
-   background-color: transparent;
- }
-.slide-fade-enter-active {
-  transition: all .3s ease;
-}
-
-.slide-fade-leave-active {
-  transition: all .2s cubic-bezier(1.0, 0.5, 0.8, 1.0);
-}
-
-.slide-fade-enter,
-.slide-fade-leave-to {
-  transform: translateX(10px);
-  opacity: 0;
-}
-
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  z-index: 999; /* Ensure the overlay is on top of other content */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.overlay-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-}
 
 </style>
