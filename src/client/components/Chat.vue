@@ -56,6 +56,17 @@
       </div>
     </div>
 
+    <div v-if="showQuitConfirmation" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+      <div class="bg-white p-8 rounded-lg">
+        <!-- Popup content goes here -->
+        <h2 class="text-xl font-bold mb-4">Confirm Quit</h2>
+        <p>Are you sure you want to quit the game?</p>
+        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="confirmQuit">Yes, Quit</button>
+        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="cancelQuit">Cancel</button>
+      </div>
+    </div>
+
+
   <!-- End   v-if="!showThankYou" case-->
   </div>
     <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>

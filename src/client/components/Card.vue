@@ -52,6 +52,7 @@ export default {
         this.isBouncing = false;
       }, 1000); // Adjust timing as needed
     },
+
     nextCard() {
       socket.emit("next card")
     },
@@ -66,22 +67,6 @@ export default {
           this.$refs.progressBar.style.width = `${this.progressValue}%`;
       }
     },
-
-		animateRipple: function(e) {
-			let el  = this.$refs.tiBtn;
-			let pos = el.getBoundingClientRect();
-			
-			this.ripples.push({
-				x: e.clientX - pos.left,
-				y: e.clientY - pos.top,
-				show: true
-			});
-		},
-
-		rippleEnd: function(i) {
-			this.ripples[i].show = false;
-		},
-
   },
   created() {
     // When component created ask the server for a game update
@@ -95,7 +80,6 @@ export default {
         this.updateProgress(progress)
       }
     })
-
   },
   destroyed() {
     socket.off("update game");
