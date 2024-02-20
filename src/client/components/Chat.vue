@@ -1,21 +1,21 @@
 <template>
-  <div>
 
+  <div>
     <!-- Full Screen Overlay -->
     <div v-if="showOverlay" class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50">
     <div class="absolute w-full h-full bg-gray-800 opacity-50"></div> 
-    <div class="z-50 text-center">
-        <div class="bg-white p-8 rounded-lg shadow-lg">
-            <img src="/public/images/movez.png" alt="Avatar"  class="mx-auto mb-2 w-16 h-16" />
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Waiting for your chat partner<span id="dots" class="ml-1">...</span></h2>
-        </div>
-    </div>
+      <div class="z-50 text-center">
+          <div class="bg-white p-8 rounded-lg shadow-lg">
+              <img src="/public/images/movez.png" alt="Avatar"  class="mx-auto mb-2 w-16 h-16" />
+              <h2 class="text-2xl font-bold text-gray-800 mb-4">Waiting for your chat partner<span id="dots" class="ml-1">...</span></h2>
+          </div>
+      </div>
     </div>
 
    <div v-else-if="!showThankYou">
     <div class="flex">
+      <!-- Left Panel Content -->
       <div class="w-1/3 bg-gray-300">
-        <!-- Left Panel Content -->
         <!-- Active Users Section -->
         <div class="p-3">
            <div class="flex items-center justify-between p-4">
@@ -33,11 +33,12 @@
             />
         </div>
 
+        <!-- Card Game -->
         <card />
 
     </div>
+    <!-- Right Panel Content -->
     <div class="w-2/3">
-      <!-- Right Panel Content -->
         <message-panel
           v-if="selectedUser"
           :user="selectedUser"
@@ -58,7 +59,6 @@
 
     <div v-if="showQuitConfirmation" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
       <div class="bg-white p-8 rounded-lg">
-        <!-- Popup content goes here -->
         <h2 class="text-xl font-bold mb-4">Confirm Quit</h2>
         <p>Are you sure you want to quit the game?</p>
         <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="confirmQuit">Yes, Quit</button>
@@ -67,7 +67,6 @@
     </div>
 
 
-  <!-- End   v-if="!showThankYou" case-->
   </div>
     <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
   </div>

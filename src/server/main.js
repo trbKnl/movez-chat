@@ -147,7 +147,17 @@ io.use(async (socket, next) => {
 
 io.on("connection", async (socket) => {
 
-  // persist session
+  // Check if user is allowed to join a game
+  let cardGame = await loadGame(socket.roomId)
+  if (cardGame.isValidUser(socket.sessionId)) {
+    cardGame.registerUser(socket.sessionId)
+    saveGame(socket.roomId, cardGame)
+    logGame(cardGame)
+  } else {
+    return 
+  }
+
+  // Persist session
   sessionStore.saveSession(socket.sessionId, {
     userId: socket.userId,
     username: socket.username,
@@ -155,7 +165,7 @@ io.on("connection", async (socket) => {
     roomId: socket.roomId
   })
 
-  // emit session details
+  // Emit session details
   socket.emit("session", {
     sessionId: socket.sessionId,
     userId: socket.userId,
@@ -166,7 +176,7 @@ io.on("connection", async (socket) => {
   socket.join(socket.userId)
 
   // log connection
-  logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "state": "connected"})
+  logger.log("info", {"roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "state": "connected"})
 
   // fetch existing users
   const users = []
@@ -214,7 +224,7 @@ io.on("connection", async (socket) => {
       from: socket.userId,
       to,
     }
-    logger.log("info", { "roomId": `${socket.roomId}`, "user": `${socket.username}`, "message": `${JSON.stringify(message)}`, })
+    logger.log("info", { "roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "message": `${JSON.stringify(message)}`, })
     socket.to(to).to(socket.userId).emit("private message", message)
     messageStore.saveMessage(message)
   })
@@ -233,7 +243,7 @@ io.on("connection", async (socket) => {
         connected: false,
         roomId: socket.roomId
       })
-    logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "state": "disconnected"})
+    logger.log("info", {"roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "state": "disconnected"})
     }
   })
 
@@ -258,21 +268,22 @@ io.on("connection", async (socket) => {
       card: cardGame.card,
       progress: progress,
     })
-    logger.log("info", {"roomId": `${socket.roomId}`, "user": `${socket.username}`, "card": `${cardGame.card}`, "progress": `${cardGame.progress}`})
+    logger.log("info", {"roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "card": `${cardGame.card}`, "progress": `${cardGame.progress}`})
     saveGame(socket.roomId, cardGame)
   })
 
   // LOG SUGGESTION EVENT
   socket.on("suggestion", (suggestion) => { 
-    logger.log("info", { "roomId": `${socket.roomId}`, "user": `${socket.username}`, "suggestion": suggestion, })
+    logger.log("info", { "roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "suggestion": suggestion, })
   })
 })
 
 
-// GAME FUNCTIONS
+// GAME AND ROOM  UNCTIONS
 function saveGame(roomId, cardGame) {
     roomStore.saveRoom(roomId, { cardGame: cardGame.serialize() })
 }
+
 
 async function loadGame(roomId) {
   /* Try to load the game from the roomStore 

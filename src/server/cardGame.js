@@ -28,11 +28,13 @@ export class CardGame  {
       cardsLeft = [...CARDS].reverse(),
       totalNumberOfCards = CARDS.length,
       progress = 0,
+      users = [],
   ) {
     this.card = card
     this.cardsLeft = cardsLeft
     this.totalNumberOfCards = totalNumberOfCards
     this.progress = progress
+    this.users = users
   }
 
   get currentCard() {
@@ -69,6 +71,24 @@ export class CardGame  {
     this.cardsLeft = [...CARDS].reverse() // make a copy of the CARD array
     this.totalNumberOfCards = CARDS.length
     this.progress = 0
+    this.users = this.users
+  }
+
+  registerUser(user) {
+    console.log(`CARDGAME ${JSON.stringify(this.users)}`)
+    if (this.users.includes(user) === false) {
+      this.users.push(user)
+    } 
+  }
+
+  isValidUser(user) {
+    if (this.users.includes(user)) {
+      return true
+    } else if (this.users.length < 2) {
+      return true
+    } else {
+      false
+    }
   }
 
   serialize() {
@@ -76,51 +96,7 @@ export class CardGame  {
   }
 
   static createFromSerialized(serializedCardGame) {
-    const {card, cardsLeft, totalNumberOfCards, progress} = JSON.parse(serializedCardGame)
-    return new CardGame(card, cardsLeft, totalNumberOfCards, progress)
+    const {card, cardsLeft, totalNumberOfCards, progress, users} = JSON.parse(serializedCardGame)
+    return new CardGame(card, cardsLeft, totalNumberOfCards, progress, users)
   }
 }
-
-
-
-//var game = new CardGame()
-//
-//game.currentCard()
-//game.nextCard()
-//game.currentProgress()
-//console.log(CARDS)
-//
-////
-//game.nextRandomCard()
-//
-//var a = ["a", "b", "c"]
-//popRandomElement(a)
-//
-//
-//function asd(x = "asd") {
-//  console.log(x)
-//}
-//
-//asd("Asd")
-//asd()
-//
-//
-//
-
-//var game2 = new CardGame()
-//
-//game2.nextCard(mode = "linear")
-//game2.currentProgress()
-//game2.resetGame()
-//
-//var game2_serialized = game2.serialize()
-//game2_serialized
-//
-//var new_game = CardGame.createFromSerialized(game2_serialized)
-//new_game.nextCard()
-//
-//CARDS
-//
-//
-//
-//

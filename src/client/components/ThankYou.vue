@@ -3,7 +3,9 @@
     <div class="absolute w-full h-full bg-gray-800 opacity-50"></div> 
     <div class="z-50 text-center">
       <div class="bg-white p-8 rounded-lg shadow-lg">
+
         <img src="/public/images/movez.png" alt="Avatar" class="mx-auto mb-2 w-16 h-16" />
+
         <div v-if="!isSubmitted">
           <p class="text-lg font-semibold text-gray-800 mb-2">Thank You!</p>
           <p class="text-gray-700 mb-4">We hope you enjoyed the game. Please share your suggestions with us.</p>
@@ -15,6 +17,7 @@
           <p class="text-lg font-semibold text-gray-800 mb-2">Thank you for participating in our experiment!</p>
           <p class="text-gray-700">Your feedback has been invaluable.</p>
         </div>
+
       </div>
     </div>
   </div>
@@ -25,14 +28,13 @@ export default {
   data() {
     return {
       suggestions: '',
-      isSubmitted: false, // New property to track submission status
+      isSubmitted: false, 
     };
   },
   methods: {
     submit() {
       this.$emit('submit-suggestion', this.suggestions);
-      // Optionally reset the textarea or give feedback to the user
-      this.isSubmitted = true; // Set to true after submission
+      this.isSubmitted = true; 
     }
   }
 }
