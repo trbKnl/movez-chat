@@ -150,10 +150,10 @@ export default {
     },
 
     closeOverlay(nUsers) {
-      if (nUsers >= 2) {
+      //if (nUsers >= 2) {
           this.showOverlay = false
-          socket.emit("send game update")
-      }
+          //socket.emit("send game update")
+      //}
     }
   },
   created() {
@@ -215,21 +215,17 @@ export default {
 
     socket.on("user connected", (user) => {
       console.log("USER CONNECTED EVENT")
-      console.log(`User connected to with roomId: ${socket.roomId}`)
-      console.log(`The current users room is roomId ${user.roomId}`)
-      if (socket.roomId === user.roomId) {
-          for (let i = 0; i < this.users.length; i++) {
-            const existingUser = this.users[i];
-            if (existingUser.userId === user.userId) {
-              existingUser.connected = true;
-              return;
-            }
-          }
-          initReactiveProperties(user);
-          this.setActiveUser(user)
-          this.users.push(user);
-          this.closeOverlay(this.users.length)
-     }
+      for (let i = 0; i < this.users.length; i++) {
+        const existingUser = this.users[i];
+        if (existingUser.userId === user.userId) {
+          existingUser.connected = true;
+          return;
+        }
+      }
+      initReactiveProperties(user);
+      this.setActiveUser(user)
+      this.users.push(user);
+      this.closeOverlay(this.users.length)
     });
 
     socket.on("user disconnected", (id) => {
@@ -262,10 +258,8 @@ export default {
     // GAME EVENT LISTENERS
     socket.on("update game", ({roomId, card, progress}) => {
       console.log(`UPDATE RECEIVED: ${roomId}, ${card}, ${progress}`)
-      if (socket.roomId === roomId) {
-        this.showCard(card)
-        this.updateProgress(progress)
-      }
+      this.showCard(card)
+      this.updateProgress(progress)
     })
 
   },

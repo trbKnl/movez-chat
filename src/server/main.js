@@ -9,7 +9,11 @@ import session from "express-session"
 import winston  from "winston"
 import crypto from "crypto"
 
-import { CardGame } from "./cardGame.js"
+import { Worker, Queue } from "bullmq"
+
+import { Game, GameStore } from "./game.js"
+
+
 
 // CONSTANTS
 
@@ -83,11 +87,9 @@ io.engine.use(sessionMiddleware)
 
 // EXPRESS ROUTES
 
-app.get("/chat/:roomId/:username", (req, res) => {
-  const roomId = req.params.roomId
-  const username = req.params.username
-  req.session.roomId = roomId
-  req.session.username = username
+app.get("/chat/:sessionId", (req, res) => {
+  const sessionId = req.params.sessionId
+  req.session.sessionId = sessionId
   res.sendFile(resolve(__dirname + chatAppUrl))
 })
 
@@ -99,123 +101,133 @@ const sessionStore = new RedisSessionStore(redisClient)
 import { RedisMessageStore } from "./messageStore.js"
 const messageStore = new RedisMessageStore(redisClient)
 
-import { RedisRoomStore } from "./roomStore.js"
-const roomStore = new RedisRoomStore(redisClient)
+let gameStore = new GameStore(new Redis())
+
+
 
 // SOCKET IO SERVER
+//
+//
+//
 
 io.use(async (socket, next) => {
-  console.log(`Extracted from url, roomId: ${socket.request.session.roomId}`)
-  console.log(`Extracted from url, username: ${socket.request.session.username}`)
+  console.log(`Extracted from url, sessionId: ${socket.request.session.sessionId}`)
 
-  const roomId = socket.request.session.roomId
-  const username = socket.request.session.username
-  //const sessionId = socket.handshake.auth.sessionId
-  
-  // Sessions are for the moment tied to usernames
-  // In order to deal with the fact that session cookies are not shared between tabs in Safari
-  // Old code is still in place for the moment
-  const sessionId = socket.request.session.username 
+  const sessionId = socket.request.session.sessionId 
 
-  if (sessionId) {
-    console.log(`session detected: ${sessionId}`)
-    // If we can find a session restore it 
-    const session = await sessionStore.findSession(sessionId)
-    if (session) {
-      socket.sessionId = sessionId
-      socket.userId = session.userId
-      socket.username = session.username
-      socket.roomId = session.roomId
-      console.log(`Loaded from session, username: ${session.username}`)
-      console.log(`Loaded from session, roomId: ${session.roomId}`)
-      //socket.sessionId = sessionId
-      //socket.userId = session.userId
-      //socket.username = session.username
-      //socket.roomId = session.roomId
-      //console.log(`Loaded from session, username: ${session.username}`)
-      //console.log(`Loaded from session, roomId: ${session.roomId}`)
-      return next()
-    }
+  // If we can find a session restore it 
+  const session = await sessionStore.findSession(sessionId)
+  if (session) {
+
+    console.log(session)
+    console.log(`Loaded from session, sessionId: ${sessionId}`)
+    console.log(`Loaded from session, gameId: ${session.gameId}`)
+    socket.sessionId = sessionId
+    socket.userId = session.userId
+    socket.gameId = session.gameId
+    return next()
   }
-  //socket.sessionId = randomId()
-  socket.sessionId = username
+
+  // If sessions cannot be found
+  socket.sessionId = sessionId
   socket.userId = randomId()
-  socket.username = displayNameOfChatPartner
-  socket.roomId = roomId
+  socket.gameId = ""
+
+  // store newly created session
+  sessionStore.saveSession(sessionId, {
+    userId: socket.userId,
+    gameId: socket.gameId,
+    connected: true,
+  })
+
   next()
 })
 
 io.on("connection", async (socket) => {
 
-  // Check if user is allowed to join a game
-  let cardGame = await loadGame(socket.roomId)
-  if (cardGame.isValidUser(socket.sessionId)) {
-    cardGame.registerUser(socket.sessionId)
-    saveGame(socket.roomId, cardGame)
-    logGame(cardGame)
-  } else {
-    return 
-  }
-
-  // Persist session
-  sessionStore.saveSession(socket.sessionId, {
-    userId: socket.userId,
-    username: socket.username,
-    connected: true,
-    roomId: socket.roomId
-  })
+  sessionStore.updateSessionField(socket.sessionId, "connected", true)
+  // log connection
+  logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "connected"})
 
   // Emit session details
   socket.emit("session", {
     sessionId: socket.sessionId,
     userId: socket.userId,
-    roomId: socket.roomId
   })
 
   // Join the user to a channel with userId as identifier
   socket.join(socket.userId)
 
-  // log connection
-  logger.log("info", {"roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "state": "connected"})
+  //// Check if game can be found
+  console.log("=====================")
+  console.log(`socket.gameId ${socket.gameId}`)
+  console.log(`socket.gameId ${typeof socket.gameId}`)
+  console.log("=====================")
 
+  if (socket.gameId !== "") {
+    //LOAD GAME
+    console.log("ALREADY IN GAME")
+    console.log(socket.gameId)
+    let game = await gameStore.load(socket.gameId)
+    let currentRound =  game.getRound()
+    sendPartnerToAllPlayers([socket.userId], currentRound)
+  } else {
+    // ADD TO QUEUE
+    console.log("NOT IN A GAME ADDED TO QUEUE")
+    await waitingQueue.add("participant", {
+      sessionId: socket.sessionId,
+      userId: socket.userId
+    });
+  }
+
+  // REWORK THIS CODE
+  // REWORK THIS CODE
+  // REWORK THIS CODE
+  // REWORK THIS CODE
+  // REWORK THIS CODE
+  // THIS CODE FETCHES ALL CURRENT USERS AND THEIR MESSAGES
   // fetch existing users
-  const users = []
-  const [messages, sessions] = await Promise.all([
-    messageStore.findMessagesForUser(socket.userId),
-    sessionStore.findAllSessions(),
-  ])
-  const messagesPerUser = new Map()
-  messages.forEach((message) => {
-    const { from, to } = message
-    const otherUser = socket.userId === from ? to : from
-    if (messagesPerUser.has(otherUser)) {
-      messagesPerUser.get(otherUser).push(message)
-    } else {
-      messagesPerUser.set(otherUser, [message])
-    }
-  })
+  //const users = []
+  //const [messages, sessions] = await Promise.all([
+  //  messageStore.findMessagesForUser(socket.userId),
+  //  sessionStore.findAllSessions(),
+  //])
+  //const messagesPerUser = new Map()
+  //messages.forEach((message) => {
+  //  const { from, to } = message
+  //  const otherUser = socket.userId === from ? to : from
+  //  if (messagesPerUser.has(otherUser)) {
+  //    messagesPerUser.get(otherUser).push(message)
+  //  } else {
+  //    messagesPerUser.set(otherUser, [message])
+  //  }
+  //})
 
-  sessions.forEach((session) => {
-    if (session.roomId === socket.roomId) {
-      users.push({
-        userId: session.userId,
-        username: displayNameOfChatPartner,
-        connected: session.connected,
-        messages: messagesPerUser.get(session.userId) || [],
-      })
-    }
-  })
-  socket.emit("users", users)
+  //sessions.forEach((session) => {
+  //  if (session.roomId === socket.roomId) {
+  //    users.push({
+  //      userId: session.userId,
+  //      username: displayNameOfChatPartner,
+  //      connected: session.connected,
+  //      messages: messagesPerUser.get(session.userId) || [],
+  //    })
+  //  }
+  //})
+  //socket.emit("users", users)
 
+  // REWORK THIS CODE
+  // REWORK THIS CODE
+  // REWORK THIS CODE
+  // THIS IS CODE WHAT SHOULD HAPPEN UPON A RECONNECT
   // notify existing users
-  socket.broadcast.emit("user connected", {
-    userId: socket.userId,
-    username: displayNameOfChatPartner,
-    roomId: socket.roomId,
-    connected: true,
-    self: false,
-    messages: [],
-  })
+  //socket.broadcast.emit("user connected", {
+  //  userId: socket.userId,
+  //  username: displayNameOfChatPartner,
+  //  roomId: socket.roomId,
+  //  connected: true,
+  //  self: false,
+  //  messages: [],
+  //})
 
   // forward the private message to the right recipient (and to other tabs of the sender)
   socket.on("private message", ({ content, to }) => {
@@ -224,86 +236,156 @@ io.on("connection", async (socket) => {
       from: socket.userId,
       to,
     }
-    logger.log("info", { "roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "message": `${JSON.stringify(message)}`, })
+    logger.log("info", {"sessionId": `${socket.sessionId}`, "message": `${JSON.stringify(message)}`, })
     socket.to(to).to(socket.userId).emit("private message", message)
     messageStore.saveMessage(message)
   })
 
   // notify users upon disconnection
   socket.on("disconnect", async () => {
+    removeFromPlayers(socket.userId)
     const matchingSockets = await io.in(socket.userId).allSockets()
     const isDisconnected = matchingSockets.size === 0
     if (isDisconnected) {
       // notify other users
       socket.broadcast.emit("user disconnected", socket.userId)
-      // update the connection status of the session
-      sessionStore.saveSession(socket.sessionId, {
-        userId: socket.userId,
-        username: socket.username,
-        connected: false,
-        roomId: socket.roomId
-      })
-    logger.log("info", {"roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "state": "disconnected"})
+      sessionStore.updateSessionField(socket.sessionId, "connected", false)
+      sessionStore.updateSessionField(socket.sessionId, "username", "wubalubaduddub")
+      logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "disconnected"})
     }
-  })
-
-  // GAME EVENTS
-  socket.join(socket.roomId)
-
-  socket.on("send game update", async () => {
-    let cardGame = await loadGame(socket.roomId)
-    io.to(socket.roomId).emit("update game", {  // notice the use of io instead of socket
-      roomId: socket.roomId, 
-      card: cardGame.card,
-      progress: cardGame.progress,
-    })
-  })
-
-  socket.on("next card", async () => {
-    let cardGame = await loadGame(socket.roomId)
-    const progress = cardGame.currentProgress()
-    cardGame.nextCard()
-    io.to(socket.roomId).emit("update game", {
-      roomId: socket.roomId, 
-      card: cardGame.card,
-      progress: progress,
-    })
-    logger.log("info", {"roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "card": `${cardGame.card}`, "progress": `${cardGame.progress}`})
-    saveGame(socket.roomId, cardGame)
-  })
-
-  // LOG SUGGESTION EVENT
-  socket.on("suggestion", (suggestion) => { 
-    logger.log("info", { "roomId": `${socket.roomId}`, "sessionId": `${socket.sessionId}`, "suggestion": suggestion, })
   })
 })
 
 
-// GAME AND ROOM  UNCTIONS
-function saveGame(roomId, cardGame) {
-    roomStore.saveRoom(roomId, { cardGame: cardGame.serialize() })
+
+// QUEUE LOGIC
+
+
+async function emptyQueue(queue) {
+  await queue.obliterate({ force: true });
+  console.log('Queue emptied');
 }
 
+const gameQueue = new Queue('gameQueue');
+const waitingQueue = new Queue('waitingQueue');
+emptyQueue(waitingQueue)
+emptyQueue(gameQueue)
 
-async function loadGame(roomId) {
-  /* Try to load the game from the roomStore 
-   * If no game can be found, create a game and store it in the roomStore
-   * returns cardGame object, see cardGame.js
-   */
-  let cardGame
-  let room = await roomStore.findRoom(roomId)
-  if (!room) {
-    cardGame = new CardGame()
-    saveGame(roomId, cardGame)
-  } else {
-    cardGame = CardGame.createFromSerialized(room.cardGame)
+
+let players = []
+
+function removeFromPlayers(userId) {
+  players.forEach((el, idx, arr) => {
+    if (el.userId === userId) {
+      arr.splice(idx, 1)
+    }
+  })
+}
+
+// works because concurrency level is 1
+const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
+    if (job.data !== undefined) {
+      players.push(job.data)
+    }
+    if (players.length ===  2) {
+      await gameQueue.add("game", {players: players});
+      players.length = 0
+    }
+  }, { 
+    connection: new Redis({
+      host: "0.0.0.0",
+      port: 6379,
+      maxRetriesPerRequest: null
+  })
+});
+
+
+// GAMEQUEUE
+
+const gameQueueWorker = new Worker('gameQueue', async (job) => {
+  await gameLoop(job.data.players)
+  }, { 
+    connection: new Redis({
+      host: "0.0.0.0",
+      port: 6379,
+      maxRetriesPerRequest: null
+    }),
+    concurrency: 50 
   }
-  return cardGame
+)
+
+
+// GAMELOOP LOGIC
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function logGame(cardGame) {
-  console.log(`${JSON.stringify(cardGame)}`)
+
+async function gameLoop(players) {
+  /**
+ * @param  {Array} players [should be length 4 containing player userId's]
+ */
+  try { // needed for development else you wont see any error messages
+
+    console.log("START GAME")
+
+    const userIds = players.map(obj => obj.userId)
+    // create a game
+    let game  = new Game(userIds)
+    let gameId = randomId()
+    game.nextRound()
+    await gameStore.save(gameId, game)
+
+    // register game with players
+    players.forEach((player) => {
+      sessionStore.updateSessionField(player.sessionId, "gameId", gameId) 
+    })
+
+    while (game.gameOngoing) {
+
+      // get the first round
+      let round = game.getRound()
+      sendPartnerToAllPlayers(userIds, round)
+      await sleep(game.duration)
+      game.nextRound()
+      await gameStore.save(gameId, game)
+    }
+
+    // unregister game with players
+    players.forEach((player) => {
+      sessionStore.updateSessionField(player.sessionId, "gameId", "") 
+    })
+    console.log("END GAME")
+  } catch (error) {
+    console.log(error)
+  }
 }
+
+
+// TODO
+// MAKE THIS FUNCTION MORE ELEGANT
+function sendPartnerToAllPlayers(userIds, currentRound) {
+  // a round consists of pairs of players
+  userIds.forEach((userId) => {
+    for (const pair of currentRound) {
+      if (pair.includes(userId)) {
+        const partnerId = pair.find(id => id !== userId);
+        let users = []
+        users.push({
+          userId: partnerId,
+          username: partnerId,
+          connected: true,
+          messages: [],
+        })
+        io.to(userId).emit("users", users)
+      }
+    }
+  })
+}
+
+
+
 
 // START SERVER
 

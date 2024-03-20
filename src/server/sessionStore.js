@@ -24,8 +24,8 @@ export class InMemorySessionStore extends SessionStore {
 }
 
 const SESSION_TTL = 24 * 60 * 60;
-const mapSession = ([userId, username, connected, roomId]) =>
-  userId ? { userId, username, connected: connected === "true", roomId } : undefined;
+const mapSession = ([userId, username, connected, gameId]) =>
+  userId ? { userId, username, connected: connected === "true", gameId } : undefined;
 
 export class RedisSessionStore extends SessionStore {
   constructor(redisClient) {
@@ -35,11 +35,16 @@ export class RedisSessionStore extends SessionStore {
 
   findSession(id) {
     return this.redisClient
-      .hmget(`session:${id}`, "userId", "username", "connected", "roomId")
+      .hmget(`session:${id}`, "userId", "username", "connected", "gameId")
       .then(mapSession);
   }
 
-  saveSession(id, { userId, username, connected, roomId }) {
+  updateSessionField(id, fieldName, value) {
+    this.redisClient
+      .hset(`session:${id}`, fieldName, value)
+  }
+
+  saveSession(id, { userId, username, connected, gameId }) {
     this.redisClient
       .multi()
       .hset(
@@ -50,8 +55,8 @@ export class RedisSessionStore extends SessionStore {
         username,
         "connected",
         connected,
-        "roomId",
-        roomId
+        "gameId",
+        gameId
       )
       .expire(`session:${id}`, SESSION_TTL)
       .exec();
@@ -73,7 +78,7 @@ export class RedisSessionStore extends SessionStore {
     } while (nextIndex !== 0);
     const commands = [];
     keys.forEach((key) => {
-      commands.push(["hmget", key, "userId", "username", "connected", "roomId"]);
+      commands.push(["hmget", key, "userId", "username", "connected", "gameId"]);
     });
     return this.redisClient
       .multi(commands)
