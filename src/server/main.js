@@ -146,7 +146,6 @@ io.use(async (socket, next) => {
 io.on("connection", async (socket) => {
 
   sessionStore.updateSessionField(socket.sessionId, "connected", true)
-  // log connection
   logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "connected"})
 
   // Emit session details
@@ -159,10 +158,10 @@ io.on("connection", async (socket) => {
   socket.join(socket.userId)
 
   //// Check if game can be found
-  console.log("=====================")
-  console.log(`socket.gameId ${socket.gameId}`)
-  console.log(`socket.gameId ${typeof socket.gameId}`)
-  console.log("=====================")
+  //console.log("=====================")
+  //console.log(`socket.gameId ${socket.gameId}`)
+  //console.log(`socket.gameId ${typeof socket.gameId}`)
+  //console.log("=====================")
 
   if (socket.gameId !== "") {
     //LOAD GAME
@@ -250,7 +249,6 @@ io.on("connection", async (socket) => {
       // notify other users
       socket.broadcast.emit("user disconnected", socket.userId)
       sessionStore.updateSessionField(socket.sessionId, "connected", false)
-      sessionStore.updateSessionField(socket.sessionId, "username", "wubalubaduddub")
       logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "disconnected"})
     }
   })
@@ -259,7 +257,6 @@ io.on("connection", async (socket) => {
 
 
 // QUEUE LOGIC
-
 
 async function emptyQueue(queue) {
   await queue.obliterate({ force: true });
@@ -273,6 +270,7 @@ emptyQueue(gameQueue)
 
 
 let players = []
+const nPlayers = 4 // Only 4 really makes sense
 
 function removeFromPlayers(userId) {
   players.forEach((el, idx, arr) => {
@@ -287,9 +285,15 @@ const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
     if (job.data !== undefined) {
       players.push(job.data)
     }
-    if (players.length ===  2) {
+    if (players.length ===  nPlayers) {
       await gameQueue.add("game", {players: players});
       players.length = 0
+    } else {
+      // send the waiting queue count to players
+      players.forEach((player) => {
+        const playersNeeded = nPlayers - players.length
+        io.to(player.userId).emit("update players needed", playersNeeded)
+      })
     }
   }, { 
     connection: new Redis({
@@ -337,24 +341,26 @@ async function gameLoop(players) {
     game.nextRound()
     await gameStore.save(gameId, game)
 
-    // register game with players
+    // Register game with players
     players.forEach((player) => {
       sessionStore.updateSessionField(player.sessionId, "gameId", gameId) 
     })
 
     while (game.gameOngoing) {
-
-      // get the first round
       let round = game.getRound()
       sendPartnerToAllPlayers(userIds, round)
+      messageToAllPlayers(userIds, round)
       await sleep(game.duration)
       game.nextRound()
       await gameStore.save(gameId, game)
     }
 
-    // unregister game with players
+    // Unregister game with players
     players.forEach((player) => {
       sessionStore.updateSessionField(player.sessionId, "gameId", "") 
+    })
+    players.forEach((player) => {
+      io.to(player.userId).emit("game end")
     })
     console.log("END GAME")
   } catch (error) {
@@ -366,7 +372,7 @@ async function gameLoop(players) {
 // TODO
 // MAKE THIS FUNCTION MORE ELEGANT
 function sendPartnerToAllPlayers(userIds, currentRound) {
-  // a round consists of pairs of players
+  // A round consists of pairs of players
   userIds.forEach((userId) => {
     for (const pair of currentRound) {
       if (pair.includes(userId)) {
@@ -379,6 +385,24 @@ function sendPartnerToAllPlayers(userIds, currentRound) {
           messages: [],
         })
         io.to(userId).emit("users", users)
+      }
+    }
+  })
+}
+
+function messageToAllPlayers(userIds, currentRound) {
+  // A round consists of pairs of players
+  userIds.forEach((userId) => {
+    for (const pair of currentRound) {
+      if (pair.includes(userId)) {
+        const partnerId = pair.find(id => id !== userId)
+        console.log("EMIT MESSAGE")
+        const message = {
+          content: `Message from this system you are now chatting with ${partnerId}`,
+          from: partnerId,
+          to: userId,
+        }
+        io.to(userId).emit("private message", message)
       }
     }
   })

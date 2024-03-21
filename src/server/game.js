@@ -30,7 +30,7 @@ export class Game {
     this.gameOngoing = gameOngoing
     this.round = round
     this.currentRound = currentRound
-    this.duration = 100000
+    this.duration = 5000
   }
 
   getRound() {
