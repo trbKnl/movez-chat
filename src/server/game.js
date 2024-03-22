@@ -2,15 +2,42 @@ import { Combination } from 'js-combinatorics'
 import { unpack, pack }  from 'msgpackr'
 
 
+// PLAYER CLASS
+
+export class Player {
+  constructor(sessionId, userId) {
+    this.sessionId = sessionId;
+    this.userId = userId;
+  }
+
+  static createFromObject(player) {
+    const { sessionId, userId } = player
+    const newPlayer = new Player(sessionId, userId)
+    return newPlayer
+  }
+
+  static areEqual(player1, player2) {
+    const { sessionId: sessionId1, userId: userId1 } = player1;
+    const { sessionId: sessionId2, userId: userId2 } = player2;
+    return sessionId1 === sessionId2 && userId1 === userId2;
+  }
+
+  static isPlayerInArray(arrayOfPlayers, specificPlayer) {
+    return arrayOfPlayers.some(player => Player.areEqual(player, specificPlayer))
+  }
+}
+
+
 // GAME OBJECT
 
 export class Game {
     constructor(
+      gameId = null,
       players = [],
       allPairs = null,
+      currentPairs = [], 
       imposter = null,
       gameOngoing = true,
-      round = null, 
       currentRound = 0
     ) {
 
@@ -24,22 +51,19 @@ export class Game {
     }
 
     // Initialize class properties
+    this.players = gameId
     this.players = players
     this.allPairs = allPairs
     this.imposter = imposter
     this.gameOngoing = gameOngoing
-    this.round = round
+    this.currentPairs = currentPairs
     this.currentRound = currentRound
-    this.duration = 5000
-  }
-
-  getRound() {
-    return this.round
+    this.duration = 10000
   }
 
   nextRound() {
     let currentPlayers = []
-    this.round = []
+    this.currentPairs = []
 
     if (this.allPairs.length === 0) {
       this.gameOngoing = false
@@ -49,8 +73,12 @@ export class Game {
       const pair = this.allPairs[i];
       const player1 =  pair[0]
       const player2 =  pair[1]
-      if (!currentPlayers.includes(player1) && !currentPlayers.includes(player2)) {
-        this.round.push(pair)
+
+      const isPlayer1AlreadyPlaying = Player.isPlayerInArray(currentPlayers, player1)
+      const isPlayer2AlreadyPlaying = Player.isPlayerInArray(currentPlayers, player2)
+
+      if (!isPlayer1AlreadyPlaying && !isPlayer2AlreadyPlaying) {
+        this.currentPairs.push(pair)
         currentPlayers.push(player1, player2)
         this.allPairs.splice(i, 1)
         i--
@@ -59,9 +87,46 @@ export class Game {
     this.currentRound += 1
   }
 
+  // ADD METHODS HERE THAT COMMUNICATE THE STATE OF THE GAME
+  // states can be "state <description of state>"
+  // The game can figure out what the state should be
+ 
+  sendPartnerToPlayer(io, player) {
+    for (const pair of this.currentPairs) {
+      if (Player.isPlayerInArray(pair, player)) {
+        const partner = pair.find(e => e.userId !== player.userId);
+        let users = []
+        users.push({
+          userId: partner.userId,
+          username: partner.userId,
+          connected: true,
+          messages: [],
+        })
+        io.to(player.userId).emit("users", users)
+      }
+    }
+  }
+
+  sendPartnerToAllPlayers(io) {
+    this.players.forEach((player) => {
+      this.sendPartnerToPlayer(io, player)
+    })
+  }
+
+  // STATIC METHODS
+  
   static createFromObject(game) {
-    const{ players, allPairs, imposter, gameOngoing, round, currentRound } = game
-    return new Game( players, allPairs, imposter, gameOngoing, round, currentRound )
+    const{ gameId, players, allPairs, imposter, gameOngoing, currentPairs, currentRound } = game
+    const playersPlayers = players.map((player) => { 
+      return Player.createFromObject(player) 
+    })
+    const allPairsPlayers = allPairs.map((pair) => { 
+      return [Player.createFromObject(pair[0]), Player.createFromObject(pair[1])] 
+    })
+    const currentPairsPlayers = currentPairs.map((pair) => { 
+      return [Player.createFromObject(pair[0]), Player.createFromObject(pair[1])] 
+    })
+    return new Game( gameId, playersPlayers, allPairsPlayers, currentPairsPlayers, imposter, gameOngoing, currentRound )
   }
 }
 
@@ -92,31 +157,3 @@ export class GameStore {
       .exec();
   }
 }
-
-
-//new Game(["a", "b", "c", "d"])
-//
-//
-//var asd = new Game(["a", "b", "c", "d"])
-//
-//let store = new GameStore(redisClient)
-//await store.save(1, asd)
-//var check = await store.load(1)
-//check
-//
-//var check = await store.load(2)
-//check
-//
-//var test = Game.createFromObject(asd)
-//test
-//test.nextRound()
-//test.startGame()
-//test.nextRound()
-//test.getRound()
-//
-//console.log(pack(asd))
-//unpack(pack(asd))
-//
-//
-
-

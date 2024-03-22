@@ -11,14 +11,14 @@ import crypto from "crypto"
 
 import { Worker, Queue } from "bullmq"
 
-import { Game, GameStore } from "./game.js"
+import { Player, Game, GameStore } from "./game.js"
 
 
 
 // CONSTANTS
 
 const randomId = () => crypto.randomBytes(8).toString("hex")
-const displayNameOfChatPartner = "Your chat partner"
+
 
 // START SOCKET IO SERVER
 
@@ -145,6 +145,9 @@ io.use(async (socket, next) => {
 
 io.on("connection", async (socket) => {
 
+
+  const player = new Player(socket.sessionId, socket.userId)
+
   sessionStore.updateSessionField(socket.sessionId, "connected", true)
   logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "connected"})
 
@@ -157,76 +160,16 @@ io.on("connection", async (socket) => {
   // Join the user to a channel with userId as identifier
   socket.join(socket.userId)
 
-  //// Check if game can be found
-  //console.log("=====================")
-  //console.log(`socket.gameId ${socket.gameId}`)
-  //console.log(`socket.gameId ${typeof socket.gameId}`)
-  //console.log("=====================")
-
+  // If game found load game
   if (socket.gameId !== "") {
-    //LOAD GAME
     console.log("ALREADY IN GAME")
     console.log(socket.gameId)
     let game = await gameStore.load(socket.gameId)
-    let currentRound =  game.getRound()
-    sendPartnerToAllPlayers([socket.userId], currentRound)
+    game.sendPartnerToPlayer(io, player)
   } else {
-    // ADD TO QUEUE
     console.log("NOT IN A GAME ADDED TO QUEUE")
-    await waitingQueue.add("participant", {
-      sessionId: socket.sessionId,
-      userId: socket.userId
-    });
+    await waitingQueue.add("participant", player)
   }
-
-  // REWORK THIS CODE
-  // REWORK THIS CODE
-  // REWORK THIS CODE
-  // REWORK THIS CODE
-  // REWORK THIS CODE
-  // THIS CODE FETCHES ALL CURRENT USERS AND THEIR MESSAGES
-  // fetch existing users
-  //const users = []
-  //const [messages, sessions] = await Promise.all([
-  //  messageStore.findMessagesForUser(socket.userId),
-  //  sessionStore.findAllSessions(),
-  //])
-  //const messagesPerUser = new Map()
-  //messages.forEach((message) => {
-  //  const { from, to } = message
-  //  const otherUser = socket.userId === from ? to : from
-  //  if (messagesPerUser.has(otherUser)) {
-  //    messagesPerUser.get(otherUser).push(message)
-  //  } else {
-  //    messagesPerUser.set(otherUser, [message])
-  //  }
-  //})
-
-  //sessions.forEach((session) => {
-  //  if (session.roomId === socket.roomId) {
-  //    users.push({
-  //      userId: session.userId,
-  //      username: displayNameOfChatPartner,
-  //      connected: session.connected,
-  //      messages: messagesPerUser.get(session.userId) || [],
-  //    })
-  //  }
-  //})
-  //socket.emit("users", users)
-
-  // REWORK THIS CODE
-  // REWORK THIS CODE
-  // REWORK THIS CODE
-  // THIS IS CODE WHAT SHOULD HAPPEN UPON A RECONNECT
-  // notify existing users
-  //socket.broadcast.emit("user connected", {
-  //  userId: socket.userId,
-  //  username: displayNameOfChatPartner,
-  //  roomId: socket.roomId,
-  //  connected: true,
-  //  self: false,
-  //  messages: [],
-  //})
 
   // forward the private message to the right recipient (and to other tabs of the sender)
   socket.on("private message", ({ content, to }) => {
@@ -270,7 +213,7 @@ emptyQueue(gameQueue)
 
 
 let players = []
-const nPlayers = 4 // Only 4 really makes sense
+const nPlayers = 2 // Only 4 really makes sense
 
 function removeFromPlayers(userId) {
   players.forEach((el, idx, arr) => {
@@ -326,18 +269,22 @@ function sleep(ms) {
 }
 
 
-async function gameLoop(players) {
+async function gameLoop(playerDataArr) {
   /**
  * @param  {Array} players [should be length 4 containing player userId's]
  */
   try { // needed for development else you wont see any error messages
 
-    console.log("START GAME")
+    console.log("==========================")
+    console.log(playerDataArr)
 
-    const userIds = players.map(obj => obj.userId)
+    const players = playerDataArr.map((player) => {return Player.createFromObject(player)})
+    console.log(players)
+    console.log("==========================")
+
     // create a game
-    let game  = new Game(userIds)
     let gameId = randomId()
+    let game  = new Game(gameId, players)
     game.nextRound()
     await gameStore.save(gameId, game)
 
@@ -347,9 +294,7 @@ async function gameLoop(players) {
     })
 
     while (game.gameOngoing) {
-      let round = game.getRound()
-      sendPartnerToAllPlayers(userIds, round)
-      messageToAllPlayers(userIds, round)
+      game.sendPartnerToAllPlayers(io)
       await sleep(game.duration)
       game.nextRound()
       await gameStore.save(gameId, game)
@@ -368,27 +313,6 @@ async function gameLoop(players) {
   }
 }
 
-
-// TODO
-// MAKE THIS FUNCTION MORE ELEGANT
-function sendPartnerToAllPlayers(userIds, currentRound) {
-  // A round consists of pairs of players
-  userIds.forEach((userId) => {
-    for (const pair of currentRound) {
-      if (pair.includes(userId)) {
-        const partnerId = pair.find(id => id !== userId);
-        let users = []
-        users.push({
-          userId: partnerId,
-          username: partnerId,
-          connected: true,
-          messages: [],
-        })
-        io.to(userId).emit("users", users)
-      }
-    }
-  })
-}
 
 function messageToAllPlayers(userIds, currentRound) {
   // A round consists of pairs of players
