@@ -14,7 +14,6 @@ import { Worker, Queue } from "bullmq"
 import { Player, Game, GameStore } from "./game.js"
 
 
-
 // CONSTANTS
 
 const randomId = () => crypto.randomBytes(8).toString("hex")
@@ -189,7 +188,6 @@ io.on("connection", async (socket) => {
     const matchingSockets = await io.in(socket.userId).allSockets()
     const isDisconnected = matchingSockets.size === 0
     if (isDisconnected) {
-      // notify other users
       socket.broadcast.emit("user disconnected", socket.userId)
       sessionStore.updateSessionField(socket.sessionId, "connected", false)
       logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "disconnected"})
@@ -264,11 +262,6 @@ const gameQueueWorker = new Worker('gameQueue', async (job) => {
 
 // GAMELOOP LOGIC
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-
 async function gameLoop(playerDataArr) {
   /**
  * @param  {Array} players [should be length 4 containing player userId's]
@@ -295,7 +288,7 @@ async function gameLoop(playerDataArr) {
 
     while (game.gameOngoing) {
       game.sendPartnerToAllPlayers(io)
-      await sleep(game.duration)
+      await game.sleepAndUpdateProgress(io)
       game.nextRound()
       await gameStore.save(gameId, game)
     }
@@ -305,35 +298,13 @@ async function gameLoop(playerDataArr) {
       sessionStore.updateSessionField(player.sessionId, "gameId", "") 
     })
     players.forEach((player) => {
-      io.to(player.userId).emit("game end")
+      io.to(player.userId).emit("game state end")
     })
     console.log("END GAME")
   } catch (error) {
     console.log(error)
   }
 }
-
-
-function messageToAllPlayers(userIds, currentRound) {
-  // A round consists of pairs of players
-  userIds.forEach((userId) => {
-    for (const pair of currentRound) {
-      if (pair.includes(userId)) {
-        const partnerId = pair.find(id => id !== userId)
-        console.log("EMIT MESSAGE")
-        const message = {
-          content: `Message from this system you are now chatting with ${partnerId}`,
-          from: partnerId,
-          to: userId,
-        }
-        io.to(userId).emit("private message", message)
-      }
-    }
-  })
-}
-
-
-
 
 // START SERVER
 

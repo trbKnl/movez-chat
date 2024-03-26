@@ -1,69 +1,58 @@
 <template>
 
-  <div>
-    <!-- Full Screen Overlay -->
-    <div v-if="showOverlay">
+<div>
+   <!-- Full Screen Overlay -->
+   <div v-if="showWaiting">
       <waiting />
-    </div>
+   </div>
 
    <div v-else-if="!showThankYou">
-    <div class="flex">
-      <!-- Left Panel Content -->
-      <div class="w-1/3 bg-gray-300">
-        <!-- Active Users Section -->
-        <div class="p-3">
-           <div class="flex items-center justify-between p-4">
-             <h2 class="font-semibold">Currently Online</h2>
-             <button @click="quitGame" class="w-8 h-auto">
-                 <img src="/public/images/exit.svg" alt="Quit" />
-               </button>
-          </div>
-            <user
-              v-for="user in users"
-              :key="user.userId"
-              :user="user"
-              :selected="selectedUser === user"
-              @select="setActiveUser(user)"
-            />
-        </div>
-
-        <!-- Card Game -->
-        <card />
-
-    </div>
-    <!-- Right Panel Content -->
-    <div class="w-2/3">
-        <message-panel
-          v-if="selectedUser"
-          :user="selectedUser"
-          @input="onMessage"
-      />
+      <div class="flex">
+         <!-- Left Panel Content -->
+         <div class="w-1/3 bg-gray-300">
+            <!-- Active Users Section -->
+            <div class="p-3">
+               <div class="flex items-center justify-between p-4">
+                  <h2 class="font-semibold">Currently Online</h2>
+                  <button @click="quitGame" class="w-8 h-auto">
+                  <img src="/public/images/exit.svg" alt="Quit" />
+                  </button>
+               </div>
+               <user
+                  v-for="user in users"
+                  :key="user.userId"
+                  :user="user"
+                  :selected="selectedUser === user"
+                  @select="setActiveUser(user)"
+                  />
+              <progress-bar :value="chatRoundProgressValue" />
+            </div>
+         </div>
+         <!-- Right Panel Content -->
+         <div class="w-2/3">
+            <message-panel
+               v-if="selectedUser"
+               :user="selectedUser"
+               @input="onMessage"
+               />
+         </div>
       </div>
-    </div>
-
-    <!-- Quit Confirmation Modal -->
-    <div v-if="showQuitConfirmation" class="modal">
-      <div class="modal-content">
-        <h2>Confirm Quit</h2>
-        <p>Are you sure you want to quit the game?</p>
-        <button @click="confirmQuit">Yes, Quit</button>
-        <button @click="cancelQuit">Cancel</button>
+      <!-- Quit Confirmation Modal -->
+      <div v-if="showQuitConfirmation" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+         <div class="bg-white p-8 rounded-lg">
+            <h2 class="text-xl font-bold mb-4">Confirm Quit</h2>
+            <p>Are you sure you want to quit the game?</p>
+            <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="confirmQuit">Yes, Quit</button>
+            <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="cancelQuit">Cancel</button>
+         </div>
       </div>
-    </div>
-
-    <div v-if="showQuitConfirmation" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-      <div class="bg-white p-8 rounded-lg">
-        <h2 class="text-xl font-bold mb-4">Confirm Quit</h2>
-        <p>Are you sure you want to quit the game?</p>
-        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="confirmQuit">Yes, Quit</button>
-        <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="cancelQuit">Cancel</button>
+      <div v-else-if="showInfoScreen">
+         <info-screen :info-text="infoText" @infoScreenTimerComplete="handleInfoScreenTimerComplete()" />
       </div>
-    </div>
+   </div>
 
-
-  </div>
-    <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
-  </div>
+   <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
+</div>
 
 </template>
 
@@ -74,10 +63,20 @@ import MessagePanel from "./MessagePanel.vue";
 import ThankYou from './ThankYou.vue';
 import Card from './Card.vue';
 import Waiting from './Waiting.vue';
+import InfoScreen from './InfoScreen.vue';
+import ProgressBar from './ProgressBar.vue';
 
 export default {
   name: "Chat",
-  components: { User, MessagePanel, ThankYou, Card, Waiting },
+  components: { 
+    User, 
+    MessagePanel,
+    ThankYou,
+    Card,
+    Waiting,
+    InfoScreen,
+    ProgressBar 
+  },
   data() {
     return {
       selectedUser: null,
@@ -87,27 +86,14 @@ export default {
       showDialog: false,
       shownMessages: [],
       showThankYou: false,
-      showOverlay: true,
-      progressValue: 0,
+      showWaiting: true,
+      chatRoundProgressValue: 0,
       showQuitConfirmation: false,
+      showInfoScreen: true,
+      infoText: "DjoMomma"
     };
   },
   methods: {
-    nextCard() {
-      socket.emit("next card")
-    },
-
-    showCard(card) {
-        this.randomMessage = card
-    },
-
-    updateProgress(progressValue) {
-      this.progressValue = progressValue
-      if (this.$refs.progressBar !== undefined) {
-          this.$refs.progressBar.style.width = `${this.progressValue}%`;
-      }
-    },
-
     onMessage(content) {
       if (this.selectedUser) {
         socket.emit("private message", {
@@ -144,12 +130,17 @@ export default {
       socket.emit("suggestion", suggestion)
     },
 
-    closeOverlay(nUsers) {
+    closeWaiting(nUsers) {
       if (nUsers > 0) {
           console.log(nUsers)
-          this.showOverlay = false
+          this.showWaiting = false
       }
-    }
+    },
+
+    handleInfoScreenTimerComplete() {
+      this.showInfoScreen = false
+    },
+
   },
   created() {
     socket.on("connect", () => {
@@ -160,9 +151,6 @@ export default {
       });
     });
 
-    // When component created ask the server for a game update
-    socket.emit("send game update")
-
     socket.on("disconnect", () => {
       this.users.forEach((user) => {
         if (user.self) {
@@ -172,16 +160,16 @@ export default {
     });
 
     // Check if overlay can be closed upon creation
-    this.closeOverlay(this.users.length)
+    this.closeWaiting(this.users.length)
 
     const initReactiveProperties = (user) => {
       user.hasNewMessages = false;
     };
 
     // USER CONNECTION EVENTS LISTENERS
-    socket.on("users", (users) => {
+    socket.on("game state users", (users) => {
       console.log("USERS EVENT")
-      this.closeOverlay(users.length)
+      this.closeWaiting(users.length)
       this.users = []
 
       users.forEach((user) => {
@@ -222,7 +210,7 @@ export default {
       initReactiveProperties(user);
       this.setActiveUser(user)
       this.users.push(user);
-      this.closeOverlay(this.users.length)
+      this.closeWaiting(this.users.length)
     });
 
     socket.on("user disconnected", (id) => {
@@ -253,8 +241,17 @@ export default {
     });
 
     // GAME EVENT LISTENERS
-    socket.on("game end", () => {
+    socket.on("game state end", () => {
       this.confirmQuit()
+    })
+
+    socket.on("game state progress update", (progress) => {
+      this.chatRoundProgressValue = progress
+    })
+
+    socket.on("game state show infoscreen", (message) => {
+      this.showInfoScreen = true
+      this.infoText = message
     })
 
   },

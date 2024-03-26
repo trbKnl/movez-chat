@@ -88,7 +88,7 @@ export class Game {
   }
 
   // ADD METHODS HERE THAT COMMUNICATE THE STATE OF THE GAME
-  // states can be "state <description of state>"
+  // states can be "game state <description of state>"
   // The game can figure out what the state should be
  
   sendPartnerToPlayer(io, player) {
@@ -102,7 +102,9 @@ export class Game {
           connected: true,
           messages: [],
         })
-        io.to(player.userId).emit("users", users)
+        io.to(player.userId).emit("game state show infoscreen", `You are now going to talk to ${partner.userId}` )
+        io.to(player.userId).emit("game state users", users)
+        break
       }
     }
   }
@@ -111,6 +113,19 @@ export class Game {
     this.players.forEach((player) => {
       this.sendPartnerToPlayer(io, player)
     })
+  }
+
+  async sleepAndUpdateProgress(io) {
+    const updateRounds = 10
+    const secondsArr = divideIntegerIntoParts(this.duration, updateRounds) // array of ms
+    for (let i = 0; i < secondsArr.length; i++) {
+      const seconds = secondsArr[i]
+      await sleep(seconds) 
+      let percentageComplete = (i + 1) / updateRounds * 100
+      this.players.forEach((player) => {
+        io.to(player.userId).emit("game state progress update", percentageComplete)
+      })
+    }
   }
 
   // STATIC METHODS
@@ -130,6 +145,9 @@ export class Game {
   }
 }
 
+
+
+// GAME STORE
 
 const SESSION_TTL = 24 * 60 * 60;
 
@@ -157,3 +175,24 @@ export class GameStore {
       .exec();
   }
 }
+
+
+// HELPERS
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+function divideIntegerIntoParts(integer, n) {
+    const parts = [];
+    const remainder = integer % n;
+    const base = Math.floor(integer / n);
+
+    for (let i = 0; i < n; i++) {
+        parts.push(i < remainder ? base + 1 : base);
+    }
+    return parts;
+}
+
+
