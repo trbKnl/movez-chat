@@ -47,7 +47,7 @@
          </div>
       </div>
       <div v-else-if="showInfoScreen">
-         <info-screen :info-text="infoText" @infoScreenTimerComplete="handleInfoScreenTimerComplete()" />
+         <info-screen :info-text="infoText" @closeInfoScreen="handleCloseInfoScreen()" />
       </div>
    </div>
 
@@ -137,7 +137,7 @@ export default {
       }
     },
 
-    handleInfoScreenTimerComplete() {
+    handleCloseInfoScreen() {
       this.showInfoScreen = false
     },
 
@@ -198,19 +198,13 @@ export default {
       });
     });
 
-    socket.on("user connected", (user) => {
-      console.log("USER CONNECTED EVENT")
+    socket.on("game state partner connected", (partnerId) => {
       for (let i = 0; i < this.users.length; i++) {
         const existingUser = this.users[i];
-        if (existingUser.userId === user.userId) {
+        if (existingUser.userId === partnerId) {
           existingUser.connected = true;
-          return;
         }
       }
-      initReactiveProperties(user);
-      this.setActiveUser(user)
-      this.users.push(user);
-      this.closeWaiting(this.users.length)
     });
 
     socket.on("user disconnected", (id) => {

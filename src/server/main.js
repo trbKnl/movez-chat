@@ -103,11 +103,7 @@ const messageStore = new RedisMessageStore(redisClient)
 let gameStore = new GameStore(new Redis())
 
 
-
 // SOCKET IO SERVER
-//
-//
-//
 
 io.use(async (socket, next) => {
   console.log(`Extracted from url, sessionId: ${socket.request.session.sessionId}`)
@@ -117,7 +113,6 @@ io.use(async (socket, next) => {
   // If we can find a session restore it 
   const session = await sessionStore.findSession(sessionId)
   if (session) {
-
     console.log(session)
     console.log(`Loaded from session, sessionId: ${sessionId}`)
     console.log(`Loaded from session, gameId: ${session.gameId}`)
@@ -144,7 +139,6 @@ io.use(async (socket, next) => {
 
 io.on("connection", async (socket) => {
 
-
   const player = new Player(socket.sessionId, socket.userId)
 
   sessionStore.updateSessionField(socket.sessionId, "connected", true)
@@ -160,13 +154,14 @@ io.on("connection", async (socket) => {
   socket.join(socket.userId)
 
   // If game found load game
-  if (socket.gameId !== "") {
-    console.log("ALREADY IN GAME")
+  let game = await gameStore.load(socket.gameId)
+
+  if (game !== null && game.gameOngoing === true) {
+    console.log("Already in a game")
     console.log(socket.gameId)
-    let game = await gameStore.load(socket.gameId)
-    game.sendPartnerToPlayer(io, player)
+    await game.sendPartnerToPlayer(io, messageStore, player)
   } else {
-    console.log("NOT IN A GAME ADDED TO QUEUE")
+    console.log("Not in a game add player to game")
     await waitingQueue.add("participant", player)
   }
 
@@ -223,7 +218,7 @@ function removeFromPlayers(userId) {
 
 // works because concurrency level is 1
 const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
-    if (job.data !== undefined) {
+    if (job.data !== undefined && Player.isPlayerInArray(players, job.data) === false) {
       players.push(job.data)
     }
     if (players.length ===  nPlayers) {
@@ -263,9 +258,6 @@ const gameQueueWorker = new Worker('gameQueue', async (job) => {
 // GAMELOOP LOGIC
 
 async function gameLoop(playerDataArr) {
-  /**
- * @param  {Array} players [should be length 4 containing player userId's]
- */
   try { // needed for development else you wont see any error messages
 
     console.log("==========================")
@@ -287,7 +279,7 @@ async function gameLoop(playerDataArr) {
     })
 
     while (game.gameOngoing) {
-      game.sendPartnerToAllPlayers(io)
+      await game.sendPartnerToAllPlayers(io, messageStore)
       await game.sleepAndUpdateProgress(io)
       game.nextRound()
       await gameStore.save(gameId, game)

@@ -91,27 +91,29 @@ export class Game {
   // states can be "game state <description of state>"
   // The game can figure out what the state should be
  
-  sendPartnerToPlayer(io, player) {
+  async sendPartnerToPlayer(io, messageStore, player) {
     for (const pair of this.currentPairs) {
       if (Player.isPlayerInArray(pair, player)) {
         const partner = pair.find(e => e.userId !== player.userId);
         let users = []
+        const messages = await getMessages(messageStore, player.userId, partner.userId)
         users.push({
           userId: partner.userId,
           username: partner.userId,
           connected: true,
-          messages: [],
+          messages: messages
         })
         io.to(player.userId).emit("game state show infoscreen", `You are now going to talk to ${partner.userId}` )
         io.to(player.userId).emit("game state users", users)
+        io.to(partner.userId).emit("game state partner connected", player.userId)
         break
       }
     }
   }
 
-  sendPartnerToAllPlayers(io) {
+  async sendPartnerToAllPlayers(io, messageStore) {
     this.players.forEach((player) => {
-      this.sendPartnerToPlayer(io, player)
+      this.sendPartnerToPlayer(io, messageStore, player)
     })
   }
 
@@ -195,4 +197,18 @@ function divideIntegerIntoParts(integer, n) {
     return parts;
 }
 
+async function getMessages(messageStore, userId, partnerId) {
+  const messages = await messageStore.findMessagesForUser(userId)
+  const messagesPerUser = new Map()
 
+  messages.forEach((message) => {
+    const { from, to } = message
+    const otherUser = userId === from ? to : from
+    if (messagesPerUser.has(otherUser)) {
+      messagesPerUser.get(otherUser).push(message)
+    } else {
+      messagesPerUser.set(otherUser, [message])
+    }
+  })
+  return messagesPerUser.get(partnerId) || []
+}
