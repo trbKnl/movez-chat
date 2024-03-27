@@ -43,6 +43,7 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+
 // SETUP PRODUCTION AND DEVELOPMENT
 
 const environment = process.env.NODE_ENV || 'development'
@@ -109,11 +110,13 @@ io.use(async (socket, next) => {
   console.log(`Extracted from url, sessionId: ${socket.request.session.sessionId}`)
 
   const sessionId = socket.request.session.sessionId 
+  console.log("=====")
+  console.log(sessionId)
+  console.log("=====")
 
   // If we can find a session restore it 
   const session = await sessionStore.findSession(sessionId)
-  if (session) {
-    console.log(session)
+  if (typeof session !== "undefined") {
     console.log(`Loaded from session, sessionId: ${sessionId}`)
     console.log(`Loaded from session, gameId: ${session.gameId}`)
     socket.sessionId = sessionId
@@ -123,7 +126,7 @@ io.use(async (socket, next) => {
   }
 
   // If sessions cannot be found
-  socket.sessionId = sessionId
+  socket.sessionId = randomId()
   socket.userId = randomId()
   socket.gameId = ""
 
@@ -136,6 +139,7 @@ io.use(async (socket, next) => {
 
   next()
 })
+
 
 io.on("connection", async (socket) => {
 
@@ -189,7 +193,6 @@ io.on("connection", async (socket) => {
     }
   })
 })
-
 
 
 // QUEUE LOGIC
@@ -267,9 +270,10 @@ async function gameLoop(playerDataArr) {
     console.log(players)
     console.log("==========================")
 
-    // create a game
+    // Create a game
     let gameId = randomId()
     let game  = new Game(gameId, players)
+
     game.nextRound()
     await gameStore.save(gameId, game)
 
@@ -278,9 +282,11 @@ async function gameLoop(playerDataArr) {
       sessionStore.updateSessionField(player.sessionId, "gameId", gameId) 
     })
 
+    // Main game loop
     while (game.gameOngoing) {
       await game.sendPartnerToAllPlayers(io, messageStore)
       await game.sleepAndUpdateProgress(io)
+
       game.nextRound()
       await gameStore.save(gameId, game)
     }
