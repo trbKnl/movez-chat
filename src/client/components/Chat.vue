@@ -174,7 +174,7 @@ export default {
 
       users.forEach((user) => {
         user.messages.forEach((message) => {
-          message.fromSelf = message.from === socket.userId;
+          message.fromSelf = message.fromUserId === socket.userId;
         });
         for (let i = 0; i < this.users.length; i++) {
           const existingUser = this.users[i];
@@ -217,11 +217,11 @@ export default {
       }
     });
 
-    socket.on("private message", ({ content, from, to }) => {
+    socket.on("private message", ({ content, fromUserId, toUserId }) => {
       for (let i = 0; i < this.users.length; i++) {
         const user = this.users[i];
-        const fromSelf = socket.userId === from;
-        if (user.userId === (fromSelf ? to : from)) {
+        const fromSelf = socket.userId === fromUserId;
+        if (user.userId === (fromSelf ? toUserId : fromUserId)) {
           user.messages.push({
             content,
             fromSelf,

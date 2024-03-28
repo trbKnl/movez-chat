@@ -3,15 +3,37 @@ import http from 'http'
 const app = express()
 const server = http.createServer(app)
 import { Server } from "socket.io"
-import Redis from "ioredis"
+import { Redis } from "ioredis"
 import ViteExpress from "vite-express"
 import session from "express-session"
 import winston  from "winston"
 import crypto from "crypto"
-
 import { Worker, Queue } from "bullmq"
 
-import { Player, Game, GameStore } from "./game.js"
+import { RedisSessionStore } from "./sessionStore"
+import type { UserSessionData } from "./sessionStore"
+import { RedisMessageStore, MessageSchema } from "./messageStore"
+import { Game, GameStore, isPlayerInArray } from "./game"
+import type { Player } from "./game"
+
+
+// TYPE STRUGGLES
+
+interface SessionObject {
+    sessionId: string
+}
+
+declare module 'express-session' {
+  export interface SessionData {
+    sessionId: string
+  }
+}
+
+declare module 'node:http' {
+  interface IncomingMessage {
+    session: SessionObject
+  }
+}
 
 
 // CONSTANTS
@@ -22,6 +44,7 @@ const randomId = () => crypto.randomBytes(8).toString("hex")
 // START SOCKET IO SERVER
 
 const io = new Server(server)
+
 
 // CONFIGURE LOGGER
 
@@ -75,7 +98,7 @@ if (environment === 'development') {
 // INITIALIZE SESSION
 
 const sessionMiddleware = session({
-  secret: "changeit",
+  secret: "itsnotreallysecret",
   resave: true,
   saveUninitialized: true,
 })
@@ -93,103 +116,106 @@ app.get("/chat/:sessionId", (req, res) => {
   res.sendFile(resolve(__dirname + chatAppUrl))
 })
 
+
 // INITIALIZE REDIS STORAGE
 
-import { RedisSessionStore } from "./sessionStore.js"
 const sessionStore = new RedisSessionStore(redisClient)
-
-import { RedisMessageStore } from "./messageStore.js"
 const messageStore = new RedisMessageStore(redisClient)
-
-let gameStore = new GameStore(new Redis())
+const gameStore = new GameStore(redisClient)
 
 
 // SOCKET IO SERVER
 
 io.use(async (socket, next) => {
-  console.log(`Extracted from url, sessionId: ${socket.request.session.sessionId}`)
-
   const sessionId = socket.request.session.sessionId 
+
   console.log("=====")
+  console.log("from url")
   console.log(sessionId)
   console.log("=====")
 
   // If we can find a session restore it 
   const session = await sessionStore.findSession(sessionId)
-  if (typeof session !== "undefined") {
+  if (session !== undefined) {
     console.log(`Loaded from session, sessionId: ${sessionId}`)
     console.log(`Loaded from session, gameId: ${session.gameId}`)
-    socket.sessionId = sessionId
-    socket.userId = session.userId
-    socket.gameId = session.gameId
+    const userSessionData: UserSessionData = {
+      sessionId: sessionId,
+      userId: session.userId,
+      gameId: session.gameId,
+      connected: session.connected,
+    }
+    socket.data.userSessionData = userSessionData
     return next()
   }
+  console.log("===============")
+  console.log("not loaded from session creating a new one")
+  console.log("===============")
 
-  // If sessions cannot be found
-  socket.sessionId = randomId()
-  socket.userId = randomId()
-  socket.gameId = ""
-
-  // store newly created session
-  sessionStore.saveSession(sessionId, {
-    userId: socket.userId,
-    gameId: socket.gameId,
+  const userSessionData: UserSessionData = {
+    sessionId: sessionId,
+    userId: randomId(),
+    gameId: "",
     connected: true,
-  })
+  }
+  sessionStore.saveSession(userSessionData)
 
+  socket.data.userSessionData = userSessionData
   next()
 })
 
 
 io.on("connection", async (socket) => {
 
-  const player = new Player(socket.sessionId, socket.userId)
+  const player: Player = {
+    sessionId: socket.data.userSessionData.sessionId, 
+    userId: socket.data.userSessionData.userId
+  }
 
-  sessionStore.updateSessionField(socket.sessionId, "connected", true)
-  logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "connected"})
+  sessionStore.updateSessionField(player.sessionId, "connected", true)
+  logger.log("info", {"sessionId": `${player.sessionId}`, "state": "connected"})
 
   // Emit session details
-  socket.emit("session", {
-    sessionId: socket.sessionId,
-    userId: socket.userId,
-  })
+  socket.emit("session", player)
 
   // Join the user to a channel with userId as identifier
-  socket.join(socket.userId)
+  socket.join(player.userId)
 
   // If game found load game
-  let game = await gameStore.load(socket.gameId)
+  let game = await gameStore.load(socket.data.userSessionData.gameId)
 
-  if (game !== null && game.gameOngoing === true) {
+  console.log("=====")
+  console.log("from game")
+  console.log(game)
+  console.log("=====")
+
+  if (game !== undefined && game.gameOngoing === true) {
     console.log("Already in a game")
-    console.log(socket.gameId)
     await game.sendPartnerToPlayer(io, messageStore, player)
   } else {
     console.log("Not in a game add player to game")
     await waitingQueue.add("participant", player)
   }
 
-  // forward the private message to the right recipient (and to other tabs of the sender)
+  // forward the private message to the right recipient
   socket.on("private message", ({ content, to }) => {
-    const message = {
-      content,
-      from: socket.userId,
-      to,
+    const result = MessageSchema.safeParse({content: content, fromUserId: player.userId, toUserId: to})
+    if (result.success) {
+      logger.log("info", {"sessionId": `${player.sessionId}`, "message": `${JSON.stringify(result.data)}`, })
+      socket.to(to).to(player.userId).emit("private message", result.data)
+      messageStore.saveMessage(result.data)
     }
-    logger.log("info", {"sessionId": `${socket.sessionId}`, "message": `${JSON.stringify(message)}`, })
-    socket.to(to).to(socket.userId).emit("private message", message)
-    messageStore.saveMessage(message)
   })
 
   // notify users upon disconnection
   socket.on("disconnect", async () => {
-    removeFromPlayers(socket.userId)
-    const matchingSockets = await io.in(socket.userId).allSockets()
+    removeFromPlayers(player.userId)
+    const matchingSockets = await io.in(player.userId).allSockets()
     const isDisconnected = matchingSockets.size === 0
     if (isDisconnected) {
-      socket.broadcast.emit("user disconnected", socket.userId)
-      sessionStore.updateSessionField(socket.sessionId, "connected", false)
-      logger.log("info", {"sessionId": `${socket.sessionId}`, "state": "disconnected"})
+      socket.broadcast.emit("user disconnected", player.userId)
+      sessionStore.updateSessionField(player.sessionId, "connected", "false")
+      logger.log("info", {"sessionId": `${player.sessionId}`, "state": "disconnected"})
     }
   })
 })
@@ -197,7 +223,7 @@ io.on("connection", async (socket) => {
 
 // QUEUE LOGIC
 
-async function emptyQueue(queue) {
+async function emptyQueue(queue: Queue) {
   await queue.obliterate({ force: true });
   console.log('Queue emptied');
 }
@@ -208,10 +234,10 @@ emptyQueue(waitingQueue)
 emptyQueue(gameQueue)
 
 
-let players = []
-const nPlayers = 2 // Only 4 really makes sense
+let players: Player[] = []
+const nPlayers = 4 // Only 4 really makes sense
 
-function removeFromPlayers(userId) {
+function removeFromPlayers(userId: string) {
   players.forEach((el, idx, arr) => {
     if (el.userId === userId) {
       arr.splice(idx, 1)
@@ -221,7 +247,7 @@ function removeFromPlayers(userId) {
 
 // works because concurrency level is 1
 const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
-    if (job.data !== undefined && Player.isPlayerInArray(players, job.data) === false) {
+    if (job.data !== undefined && isPlayerInArray(players, job.data) === false) {
       players.push(job.data)
     }
     if (players.length ===  nPlayers) {
@@ -260,13 +286,11 @@ const gameQueueWorker = new Worker('gameQueue', async (job) => {
 
 // GAMELOOP LOGIC
 
-async function gameLoop(playerDataArr) {
+async function gameLoop(players: Player[]) {
   try { // needed for development else you wont see any error messages
 
     console.log("==========================")
-    console.log(playerDataArr)
-
-    const players = playerDataArr.map((player) => {return Player.createFromObject(player)})
+    console.log("these are the players")
     console.log(players)
     console.log("==========================")
 

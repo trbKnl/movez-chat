@@ -1,64 +1,75 @@
 import { Combination } from 'js-combinatorics'
-import { unpack, pack }  from 'msgpackr'
-
+import { encode, decode } from "@msgpack/msgpack"
+import { Server as SocketIOServer } from 'socket.io'
+import { RedisMessageStore } from './messageStore'
+import { Redis } from 'ioredis'
+import { z } from 'zod'
 
 // PLAYER CLASS
 
-export class Player {
-  constructor(sessionId, userId) {
-    this.sessionId = sessionId;
-    this.userId = userId;
-  }
+export const PlayerSchema = z.object({
+  sessionId: z.string(),
+  userId: z.string(),
+})
 
-  static createFromObject(player) {
-    const { sessionId, userId } = player
-    const newPlayer = new Player(sessionId, userId)
-    return newPlayer
-  }
+export type Player = z.infer<typeof PlayerSchema>
 
-  static areEqual(player1, player2) {
-    const { sessionId: sessionId1, userId: userId1 } = player1;
-    const { sessionId: sessionId2, userId: userId2 } = player2;
-    return sessionId1 === sessionId2 && userId1 === userId2;
-  }
+export const GameDataSchema = z.object({
+  gameId: z.string(),
+  players: z.array(PlayerSchema),
+  allPairs: z.array(z.array(PlayerSchema)).optional(),
+  currentPairs: z.array(z.array(PlayerSchema)).optional(),
+  imposter: PlayerSchema.optional(),
+  gameOngoing: z.boolean(),
+  currentRound: z.number(),
+})
 
-  static isPlayerInArray(arrayOfPlayers, specificPlayer) {
-    return arrayOfPlayers.some(player => Player.areEqual(player, specificPlayer))
-  }
-}
+export type GameData = z.infer<typeof GameDataSchema>
 
 
 // GAME OBJECT
 
 export class Game {
+    public gameId: string 
+    public players: Player[]
+    public allPairs: Player[][]
+    public currentPairs: Player[][]
+    public imposter: Player 
+    public gameOngoing: boolean
+    public currentRound: number
+    public duration: number
+
     constructor(
-      gameId = null,
-      players = [],
-      allPairs = null,
-      currentPairs = [], 
-      imposter = null,
+      gameId: string,
+      players:  Player[],
+      allPairs?: Player[][],
+      currentPairs?: Player[][],
+      imposter?: Player,
       gameOngoing = true,
       currentRound = 0
     ) {
 
-    if (allPairs === null) {
+    if (allPairs === undefined) {
       let combinations = new Combination(players, 2);
       allPairs = [...combinations]
     }
 
-    if (imposter === null) {
+    if (imposter === undefined) {
       imposter = players[Math.floor(Math.random() * players.length)];
     }
 
+    if (currentPairs === undefined) {
+      currentPairs = []
+    }
     // Initialize class properties
-    this.players = gameId
+    this.gameId = gameId
     this.players = players
     this.allPairs = allPairs
     this.imposter = imposter
     this.gameOngoing = gameOngoing
     this.currentPairs = currentPairs
     this.currentRound = currentRound
-    this.duration = 10000
+    this.duration = 5000
   }
 
   nextRound() {
@@ -74,8 +85,8 @@ export class Game {
       const player1 =  pair[0]
       const player2 =  pair[1]
 
-      const isPlayer1AlreadyPlaying = Player.isPlayerInArray(currentPlayers, player1)
-      const isPlayer2AlreadyPlaying = Player.isPlayerInArray(currentPlayers, player2)
+      const isPlayer1AlreadyPlaying = isPlayerInArray(currentPlayers, player1)
+      const isPlayer2AlreadyPlaying = isPlayerInArray(currentPlayers, player2)
 
       if (!isPlayer1AlreadyPlaying && !isPlayer2AlreadyPlaying) {
         this.currentPairs.push(pair)
@@ -91,10 +102,13 @@ export class Game {
   // states can be "game state <description of state>"
   // The game can figure out what the state should be
  
-  async sendPartnerToPlayer(io, messageStore, player) {
+  async sendPartnerToPlayer(io: SocketIOServer, messageStore: RedisMessageStore, player: Player) {
     for (const pair of this.currentPairs) {
-      if (Player.isPlayerInArray(pair, player)) {
+      if (isPlayerInArray(pair, player)) {
         const partner = pair.find(e => e.userId !== player.userId);
+        if (partner === undefined) {
+          return
+        }
         let users = []
         const messages = await getMessages(messageStore, player.userId, partner.userId)
         users.push({
@@ -106,18 +120,18 @@ export class Game {
         io.to(player.userId).emit("game state show infoscreen", `You are now going to talk to ${partner.userId}` )
         io.to(player.userId).emit("game state users", users)
         io.to(partner.userId).emit("game state partner connected", player.userId)
-        break
+        return
       }
     }
   }
 
-  async sendPartnerToAllPlayers(io, messageStore) {
+  async sendPartnerToAllPlayers(io: SocketIOServer, messageStore: RedisMessageStore) {
     this.players.forEach((player) => {
       this.sendPartnerToPlayer(io, messageStore, player)
     })
   }
 
-  async sleepAndUpdateProgress(io) {
+  async sleepAndUpdateProgress(io: SocketIOServer) {
     const updateRounds = 10
     const secondsArr = divideIntegerIntoParts(this.duration, updateRounds) // array of ms
     for (let i = 0; i < secondsArr.length; i++) {
@@ -132,18 +146,9 @@ export class Game {
 
   // STATIC METHODS
   
-  static createFromObject(game) {
-    const{ gameId, players, allPairs, imposter, gameOngoing, currentPairs, currentRound } = game
-    const playersPlayers = players.map((player) => { 
-      return Player.createFromObject(player) 
-    })
-    const allPairsPlayers = allPairs.map((pair) => { 
-      return [Player.createFromObject(pair[0]), Player.createFromObject(pair[1])] 
-    })
-    const currentPairsPlayers = currentPairs.map((pair) => { 
-      return [Player.createFromObject(pair[0]), Player.createFromObject(pair[1])] 
-    })
-    return new Game( gameId, playersPlayers, allPairsPlayers, currentPairsPlayers, imposter, gameOngoing, currentRound )
+  static createFromObject(game: GameData): Game {
+    const { gameId, players, allPairs, currentPairs, imposter, gameOngoing, currentRound } = game
+    return new Game( gameId, players, allPairs, currentPairs, imposter, gameOngoing, currentRound )
   }
 }
 
@@ -154,26 +159,36 @@ export class Game {
 const SESSION_TTL = 24 * 60 * 60;
 
 export class GameStore {
-  constructor(redisClient) {
+  private  redisClient
+
+  constructor(redisClient: Redis) {
     this.redisClient = redisClient;
   }
 
-  async load(id) {
-    let game = await this.redisClient.hgetBuffer(`game:${id}`, "game")
-    if (game !== null) {
-      let gameObject = unpack(game)
-      game = Game.createFromObject(gameObject)
+  async load(gameId: string): Promise<Game | undefined> {
+    const gameBuf = await this.redisClient.hgetBuffer(`game:${gameId}`, "game")
+    if (gameBuf !== null) {
+      const gameData = decode(gameBuf)
+      const result = GameDataSchema.safeParse(gameData)
+      if (result.success) {
+        const game = Game.createFromObject(result.data)
+        return game
+      } else {
+        console.log(result.error)
+        return undefined
+      }
     }
-    return game
   }
 
-  async save(id, game) {
+  async save(gameId: string, game: Game) {
+    console.log("GAME IS SAVED")
+    const encodedGame = Buffer.from(encode(game))
     await this.redisClient.multi().hset(
-        `game:${id}`,
+        `game:${gameId}`,
         "game",
-        pack(game),
+        encodedGame,
       )
-      .expire(`game:${id}`, SESSION_TTL)
+      .expire(`game:${gameId}`, SESSION_TTL)
       .exec();
   }
 }
@@ -181,12 +196,17 @@ export class GameStore {
 
 // HELPERS
 
-function sleep(ms) {
+function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export function isPlayerInArray(playerArray: Player[], playerToCheck: Player): boolean {
+  return playerArray.some(({ sessionId, userId }) =>
+    sessionId === playerToCheck.sessionId && userId === playerToCheck.userId
+  );
+}
 
-function divideIntegerIntoParts(integer, n) {
+function divideIntegerIntoParts(integer: number, n: number): number[] {
     const parts = [];
     const remainder = integer % n;
     const base = Math.floor(integer / n);
@@ -197,13 +217,13 @@ function divideIntegerIntoParts(integer, n) {
     return parts;
 }
 
-async function getMessages(messageStore, userId, partnerId) {
+async function getMessages(messageStore: RedisMessageStore, userId: string, partnerId: string) {
   const messages = await messageStore.findMessagesForUser(userId)
   const messagesPerUser = new Map()
 
   messages.forEach((message) => {
-    const { from, to } = message
-    const otherUser = userId === from ? to : from
+    const { fromUserId, toUserId } = message
+    const otherUser = userId === fromUserId ? toUserId : fromUserId
     if (messagesPerUser.has(otherUser)) {
       messagesPerUser.get(otherUser).push(message)
     } else {
