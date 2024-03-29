@@ -127,7 +127,7 @@ const gameStore = new GameStore(redisClient)
 // SOCKET IO SERVER
 
 io.use(async (socket, next) => {
-  const sessionId = socket.request.session.sessionId 
+  let sessionId = socket.request.session.sessionId 
 
   console.log("=====")
   console.log("from url")
@@ -151,6 +151,12 @@ io.use(async (socket, next) => {
   console.log("===============")
   console.log("not loaded from session creating a new one")
   console.log("===============")
+
+  // This can only be the case when connecting to socket.io server not through the browser
+  // For example when testing the server load
+  if (sessionId === undefined) { 
+    sessionId = randomId()
+  }
 
   const userSessionData: UserSessionData = {
     sessionId: sessionId,
@@ -279,7 +285,7 @@ const gameQueueWorker = new Worker('gameQueue', async (job) => {
       port: 6379,
       maxRetriesPerRequest: null
     }),
-    concurrency: 50 
+    concurrency: 1000
   }
 )
 
@@ -319,9 +325,8 @@ async function gameLoop(players: Player[]) {
     players.forEach((player) => {
       sessionStore.updateSessionField(player.sessionId, "gameId", "") 
     })
-    players.forEach((player) => {
-      io.to(player.userId).emit("game state end")
-    })
+
+    game.endGame(io)
     console.log("END GAME")
   } catch (error) {
     console.log(error)

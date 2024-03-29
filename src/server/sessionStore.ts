@@ -28,7 +28,6 @@ export class RedisSessionStore {
     if (result.success) {
       return result.data
     } else {
-      console.log(result.error)
       return undefined
     }
   }

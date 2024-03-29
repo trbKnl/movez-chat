@@ -69,7 +69,7 @@ export class Game {
     this.gameOngoing = gameOngoing
     this.currentPairs = currentPairs
     this.currentRound = currentRound
-    this.duration = 5000
+    this.duration = 30000
   }
 
   nextRound() {
@@ -123,6 +123,12 @@ export class Game {
         return
       }
     }
+  }
+
+  endGame(io: SocketIOServer) {
+    this.players.forEach((player) => {
+      io.to(player.userId).emit("game state end")
+    })
   }
 
   async sendPartnerToAllPlayers(io: SocketIOServer, messageStore: RedisMessageStore) {
