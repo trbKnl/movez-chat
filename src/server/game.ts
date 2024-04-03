@@ -2,6 +2,7 @@ import { Combination } from 'js-combinatorics'
 import { encode, decode } from "@msgpack/msgpack"
 import { Server as SocketIOServer } from 'socket.io'
 import { RedisMessageStore } from './messageStore'
+import { RedisSessionStore } from './sessionStore'
 import { Redis } from 'ioredis'
 import { z } from 'zod'
 
@@ -125,6 +126,18 @@ export class Game {
     }
   }
 
+  registerGame(sessionStore: RedisSessionStore) {
+    this.players.forEach((player) => {
+      sessionStore.updateSessionField(player.sessionId, "gameId", this.gameId) 
+    })
+  }
+
+  unregisterGame(sessionStore: RedisSessionStore) {
+    this.players.forEach((player) => {
+      sessionStore.updateSessionField(player.sessionId, "gameId", "")
+    })
+  }
+
   endGame(io: SocketIOServer) {
     this.players.forEach((player) => {
       io.to(player.userId).emit("game state end")
@@ -186,15 +199,14 @@ export class GameStore {
     }
   }
 
-  async save(gameId: string, game: Game) {
-    console.log("GAME IS SAVED")
+  async save(game: Game) {
     const encodedGame = Buffer.from(encode(game))
     await this.redisClient.multi().hset(
-        `game:${gameId}`,
+        `game:${game.gameId}`,
         "game",
         encodedGame,
       )
-      .expire(`game:${gameId}`, SESSION_TTL)
+      .expire(`game:${game.gameId}`, SESSION_TTL)
       .exec();
   }
 }

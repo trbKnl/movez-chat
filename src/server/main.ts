@@ -1,12 +1,9 @@
 import express from 'express'
 import http from 'http'
-const app = express()
-const server = http.createServer(app)
 import { Server } from "socket.io"
 import { Redis } from "ioredis"
 import ViteExpress from "vite-express"
 import session from "express-session"
-import winston  from "winston"
 import crypto from "crypto"
 import { Worker, Queue } from "bullmq"
 
@@ -15,6 +12,10 @@ import type { UserSessionData } from "./sessionStore"
 import { RedisMessageStore, MessageSchema } from "./messageStore"
 import { Game, GameStore, isPlayerInArray } from "./game"
 import type { Player } from "./game"
+import { myLogger } from "./logger"
+
+const app = express()
+const server = http.createServer(app)
 
 
 // TYPE STRUGGLES
@@ -44,20 +45,6 @@ const randomId = () => crypto.randomBytes(8).toString("hex")
 // START SOCKET IO SERVER
 
 const io = new Server(server)
-
-
-// CONFIGURE LOGGER
-
-const logger = winston.createLogger({
-    level: 'info', 
-    format: winston.format.combine(
-      winston.format.timestamp(),
-      winston.format.json(), 
-    ),
-    transports: [
-        new winston.transports.Console(), 
-    ]
-})
 
 
 // GET DIRNAME
@@ -179,7 +166,7 @@ io.on("connection", async (socket) => {
   }
 
   sessionStore.updateSessionField(player.sessionId, "connected", true)
-  logger.log("info", {"sessionId": `${player.sessionId}`, "state": "connected"})
+  myLogger(player, {"state": "connected"})
 
   // Emit session details
   socket.emit("session", player)
@@ -190,10 +177,10 @@ io.on("connection", async (socket) => {
   // If game found load game
   let game = await gameStore.load(socket.data.userSessionData.gameId)
 
-  console.log("=====")
-  console.log("from game")
-  console.log(game)
-  console.log("=====")
+  //console.log("=====")
+  //console.log("from game")
+  //console.log(game)
+  //console.log("=====")
 
   if (game !== undefined && game.gameOngoing === true) {
     console.log("Already in a game")
@@ -207,9 +194,10 @@ io.on("connection", async (socket) => {
   socket.on("private message", ({ content, to }) => {
     const result = MessageSchema.safeParse({content: content, fromUserId: player.userId, toUserId: to})
     if (result.success) {
-      logger.log("info", {"sessionId": `${player.sessionId}`, "message": `${JSON.stringify(result.data)}`, })
-      socket.to(to).to(player.userId).emit("private message", result.data)
-      messageStore.saveMessage(result.data)
+      const message = result.data
+      myLogger(player, message)
+      socket.to(to).to(player.userId).emit("private message", message)
+      messageStore.saveMessage(message)
     }
   })
 
@@ -221,7 +209,7 @@ io.on("connection", async (socket) => {
     if (isDisconnected) {
       socket.broadcast.emit("user disconnected", player.userId)
       sessionStore.updateSessionField(player.sessionId, "connected", "false")
-      logger.log("info", {"sessionId": `${player.sessionId}`, "state": "disconnected"})
+      myLogger(player, {"state": "disconnected"})
     }
   })
 })
@@ -305,12 +293,10 @@ async function gameLoop(players: Player[]) {
     let game  = new Game(gameId, players)
 
     game.nextRound()
-    await gameStore.save(gameId, game)
+    await gameStore.save(game)
 
     // Register game with players
-    players.forEach((player) => {
-      sessionStore.updateSessionField(player.sessionId, "gameId", gameId) 
-    })
+    game.registerGame(sessionStore)
 
     // Main game loop
     while (game.gameOngoing) {
@@ -318,20 +304,18 @@ async function gameLoop(players: Player[]) {
       await game.sleepAndUpdateProgress(io)
 
       game.nextRound()
-      await gameStore.save(gameId, game)
+      await gameStore.save(game)
     }
 
-    // Unregister game with players
-    players.forEach((player) => {
-      sessionStore.updateSessionField(player.sessionId, "gameId", "") 
-    })
-
+    game.unregisterGame(sessionStore)
     game.endGame(io)
+
     console.log("END GAME")
   } catch (error) {
     console.log(error)
   }
 }
+
 
 // START SERVER
 
