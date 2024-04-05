@@ -59,24 +59,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const environment = process.env.NODE_ENV || 'development'
 
 let chatAppUrl
-let redisClient
-let redisHost
-let redisPort
-let redisUri
-let domain
+let redisHost = process.env.REDIS_HOST || "127.0.0.1"
+let redisPort = process.env.REDIS_PORT || "6379"
+let redisUri = `redis://${redisHost}:${redisPort}`
+let redisClient = new Redis(redisUri, { maxRetriesPerRequest: null })
 
 if (environment === 'development') {
     console.log('Running in development mode')
     chatAppUrl = "/../../chat.html"
-    redisClient = new Redis()
 } else if (environment === 'production') {
     chatAppUrl = "/../../dist/chat.html"
     app.use(express.static(__dirname + '/../../dist/assets'))
-    redisHost = process.env.REDIS_HOST || "localhost"
-    redisPort = process.env.REDIS_PORT || "6379"
-    redisUri = `redis://${redisHost}:${redisPort}`
-    domain = process.env.DOMAIN || "http://localhost"
-    redisClient = new Redis(redisUri)
 } else {
   throw new Error("Environment needs to be set")
 }
@@ -255,11 +248,7 @@ const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
       })
     }
   }, { 
-    connection: new Redis({
-      host: "0.0.0.0",
-      port: 6379,
-      maxRetriesPerRequest: null
-  })
+    connection: redisClient
 });
 
 
@@ -268,11 +257,7 @@ const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
 const gameQueueWorker = new Worker('gameQueue', async (job) => {
   await gameLoop(job.data.players)
   }, { 
-    connection: new Redis({
-      host: "0.0.0.0",
-      port: 6379,
-      maxRetriesPerRequest: null
-    }),
+    connection: redisClient,
     concurrency: 1000
   }
 )
