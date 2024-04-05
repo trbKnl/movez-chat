@@ -215,8 +215,8 @@ async function emptyQueue(queue: Queue) {
   console.log('Queue emptied');
 }
 
-const gameQueue = new Queue('gameQueue');
-const waitingQueue = new Queue('waitingQueue');
+const gameQueue = new Queue('gameQueue', { connection: redisClient });
+const waitingQueue = new Queue('waitingQueue', { connection: redisClient });
 emptyQueue(waitingQueue)
 emptyQueue(gameQueue)
 
