@@ -18,9 +18,7 @@ export type Player = z.infer<typeof PlayerSchema>
 export const GameDataSchema = z.object({
   gameId: z.string(),
   players: z.array(PlayerSchema),
-  allPairs: z.array(z.array(PlayerSchema)).optional(),
-  currentPairs: z.array(z.array(PlayerSchema)).optional(),
-  imposter: PlayerSchema.optional(),
+  imposter: z.number(),
   gameOngoing: z.boolean(),
   currentRound: z.number(),
 })
@@ -28,75 +26,54 @@ export const GameDataSchema = z.object({
 export type GameData = z.infer<typeof GameDataSchema>
 
 
+
+// TODO: IMPLEMENT A PLAYER STORE
+// THE PLAYERSTORE SHOULD ALLOW UPDATES PER INDIVIDUAL PLAYER THAT ONLY THE PLAYER CAN MODIFY
+// THIS AVOIDS RACE CONDITIONS
+// THIS DEFINES PER PLAYER UPDATES
+// THE KEY CAN BE GAMEID-PLAYERID, so you have player choices bound to game use hash
+// store should have: chosen topics, imposter
+
+
 // GAME OBJECT
 
 export class Game {
     public gameId: string 
     public players: Player[]
-    public allPairs: Player[][]
-    public currentPairs: Player[][]
-    public imposter: Player 
+    public imposter: number 
     public gameOngoing: boolean
     public currentRound: number
-    public duration: number
+
+    private pairingsPerRound: number[][][]
+    private duration: number
 
     constructor(
       gameId: string,
       players:  Player[],
-      allPairs?: Player[][],
-      currentPairs?: Player[][],
-      imposter?: Player,
+      imposter?: number,
       gameOngoing = true,
       currentRound = 0
     ) {
 
-    if (allPairs === undefined) {
-      let combinations = new Combination(players, 2);
-      allPairs = [...combinations]
-    }
-
     if (imposter === undefined) {
-      imposter = players[Math.floor(Math.random() * players.length)];
+      imposter = Math.floor(Math.random() * 4)
     }
 
-    if (currentPairs === undefined) {
-      currentPairs = []
-    }
     // Initialize class properties
     this.gameId = gameId
     this.players = players
-    this.allPairs = allPairs
+    this.pairingsPerRound = [[[0,1], [2,3]], [[0,2], [1,3]], [[0,3], [1,2]]]
     this.imposter = imposter
     this.gameOngoing = gameOngoing
-    this.currentPairs = currentPairs
     this.currentRound = currentRound
-    this.duration = 30000
+    this.duration = 30000 
   }
 
   nextRound() {
-    let currentPlayers = []
-    this.currentPairs = []
-
-    if (this.allPairs.length === 0) {
-      this.gameOngoing = false
-      return
-    }
-    for (let i = 0; i < this.allPairs.length; i++) {
-      const pair = this.allPairs[i];
-      const player1 =  pair[0]
-      const player2 =  pair[1]
-
-      const isPlayer1AlreadyPlaying = isPlayerInArray(currentPlayers, player1)
-      const isPlayer2AlreadyPlaying = isPlayerInArray(currentPlayers, player2)
-
-      if (!isPlayer1AlreadyPlaying && !isPlayer2AlreadyPlaying) {
-        this.currentPairs.push(pair)
-        currentPlayers.push(player1, player2)
-        this.allPairs.splice(i, 1)
-        i--
-      }
-    }
     this.currentRound += 1
+    if (this.currentRound > 2) {
+      this.gameOngoing = false
+    }
   }
 
   // ADD METHODS HERE THAT COMMUNICATE THE STATE OF THE GAME
@@ -104,12 +81,19 @@ export class Game {
   // The game can figure out what the state should be
  
   async sendPartnerToPlayer(io: SocketIOServer, messageStore: RedisMessageStore, player: Player) {
-    for (const pair of this.currentPairs) {
-      if (isPlayerInArray(pair, player)) {
-        const partner = pair.find(e => e.userId !== player.userId);
-        if (partner === undefined) {
-          return
+    if (this.gameOngoing === false) {
+      return
+    }
+    const currentRoundPairs = this.pairingsPerRound[this.currentRound]
+    const playerIndex = this.findPlayerIndex(player)
+    for (const pair of currentRoundPairs) {
+      if (pair.includes(playerIndex)) {
+        const partnerIndex = pair.find(e => e !== playerIndex)
+        if (partnerIndex === undefined) {
+          throw new Error("partnerIndex is undefined")
         }
+
+        const partner = this.players[partnerIndex]
         let users = []
         const messages = await getMessages(messageStore, player.userId, partner.userId)
         users.push({
@@ -124,6 +108,11 @@ export class Game {
         return
       }
     }
+
+  }
+
+  findPlayerIndex(player: Player) {
+    return this.players.findIndex(obj => obj.userId === player.userId);
   }
 
   registerGame(sessionStore: RedisSessionStore) {
@@ -166,8 +155,8 @@ export class Game {
   // STATIC METHODS
   
   static createFromObject(game: GameData): Game {
-    const { gameId, players, allPairs, currentPairs, imposter, gameOngoing, currentRound } = game
-    return new Game( gameId, players, allPairs, currentPairs, imposter, gameOngoing, currentRound )
+    const { gameId, players, imposter, gameOngoing, currentRound } = game
+    return new Game( gameId, players, imposter, gameOngoing, currentRound )
   }
 }
 
