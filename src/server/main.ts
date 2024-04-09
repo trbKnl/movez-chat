@@ -10,7 +10,7 @@ import { Worker, Queue } from "bullmq"
 import { RedisSessionStore } from "./sessionStore"
 import type { UserSessionData } from "./sessionStore"
 import { RedisMessageStore, MessageSchema } from "./messageStore"
-import { Game, GameStore, isPlayerInArray } from "./game"
+import { Game, GameStore, PlayerDataStore, isPlayerInArray } from "./game"
 import type { Player } from "./game"
 import { myLogger } from "./logger"
 
@@ -102,6 +102,7 @@ app.get("/chat/:sessionId", (req, res) => {
 const sessionStore = new RedisSessionStore(redisClient)
 const messageStore = new RedisMessageStore(redisClient)
 const gameStore = new GameStore(redisClient)
+const playerDataStore = new PlayerDataStore(redisClient)
 
 
 // SOCKET IO SERVER
@@ -115,31 +116,38 @@ io.use(async (socket, next) => {
   console.log("=====")
 
   // If we can find a session restore it 
-  const session = await sessionStore.findSession(sessionId)
-  if (session !== undefined) {
-    console.log(`Loaded from session, sessionId: ${sessionId}`)
-    console.log(`Loaded from session, gameId: ${session.gameId}`)
-    const userSessionData: UserSessionData = {
-      sessionId: sessionId,
-      userId: session.userId,
-      gameId: session.gameId,
-      connected: session.connected,
-    }
-    socket.data.userSessionData = userSessionData
-    return next()
-  }
-  console.log("===============")
-  console.log("not loaded from session creating a new one")
-  console.log("===============")
+  //const session = await sessionStore.findSession(sessionId)
+  //if (session !== undefined) {
+  //  console.log(`Loaded from session, sessionId: ${sessionId}`)
+  //  console.log(`Loaded from session, gameId: ${session.gameId}`)
+  //  const userSessionData: UserSessionData = {
+  //    sessionId: sessionId,
+  //    userId: session.userId,
+  //    gameId: session.gameId,
+  //    connected: session.connected,
+  //  }
+  //  socket.data.userSessionData = userSessionData
+  //  return next()
+  //}
+  //console.log("===============")
+  //console.log("not loaded from session creating a new one")
+  //console.log("===============")
 
-  // This can only be the case when connecting to socket.io server not through the browser
-  // For example when testing the server load
-  if (sessionId === undefined) { 
-    sessionId = randomId()
-  }
+  //// This can only be the case when connecting to socket.io server not through the browser
+  //// For example when testing the server load
+  //if (sessionId === undefined) { 
+  //  sessionId = randomId()
+  //}
+//
+//  const userSessionData: UserSessionData = {
+//    sessionId: sessionId,
+//    userId: randomId(),
+//    gameId: "",
+//    connected: true,
+//  }
 
   const userSessionData: UserSessionData = {
-    sessionId: sessionId,
+    sessionId: randomId(),
     userId: randomId(),
     gameId: "",
     connected: true,
@@ -167,17 +175,12 @@ io.on("connection", async (socket) => {
   // Join the user to a channel with userId as identifier
   socket.join(player.userId)
 
-  // If game found load game
+  // If game found load game else join queue
   let game = await gameStore.load(socket.data.userSessionData.gameId)
-
-  //console.log("=====")
-  //console.log("from game")
-  //console.log(game)
-  //console.log("=====")
 
   if (game !== undefined && game.gameOngoing === true) {
     console.log("Already in a game")
-    await game.sendPartnerToPlayer(io, messageStore, player)
+    await game.sendPartnerToPlayer(io, messageStore, playerDataStore, player)
   } else {
     console.log("Not in a game add player to game")
     await waitingQueue.add("participant", player)
@@ -203,6 +206,14 @@ io.on("connection", async (socket) => {
       socket.broadcast.emit("user disconnected", player.userId)
       sessionStore.updateSessionField(player.sessionId, "connected", "false")
       myLogger(player, {"state": "disconnected"})
+    }
+  })
+
+  // socket on game logic
+  socket.on("game state set topic", async ({chosenTopic}) => {
+    const userSessionData = await sessionStore.findSession(player.sessionId)
+    if (userSessionData !== undefined) {
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "topic", chosenTopic)
     }
   })
 })
@@ -283,17 +294,23 @@ async function gameLoop(players: Player[]) {
     // Register game with players
     game.registerGame(sessionStore)
 
+    game.showChooseTopicScreen(io)
+    await game.sleep(10)
+
     // Main game loop
     while (game.gameOngoing) {
-      await game.sendPartnerToAllPlayers(io, messageStore)
+      await game.sendPartnerToAllPlayers(io, messageStore, playerDataStore)
       await game.sleepAndUpdateProgress(io)
 
       game.nextRound()
       await gameStore.save(game)
     }
 
+    game.showVotingScreen(io)
+    await game.sleep(30)
+
     game.unregisterGame(sessionStore)
-    game.endGame(io)
+    game.sendEndGame(io)
 
     console.log("END GAME")
   } catch (error) {

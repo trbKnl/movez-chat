@@ -1,4 +1,3 @@
-import { Combination } from 'js-combinatorics'
 import { encode, decode } from "@msgpack/msgpack"
 import { Server as SocketIOServer } from 'socket.io'
 import { RedisMessageStore } from './messageStore'
@@ -25,17 +24,10 @@ export const GameDataSchema = z.object({
 
 export type GameData = z.infer<typeof GameDataSchema>
 
-
-
-// TODO: IMPLEMENT A PLAYER STORE
-// THE PLAYERSTORE SHOULD ALLOW UPDATES PER INDIVIDUAL PLAYER THAT ONLY THE PLAYER CAN MODIFY
-// THIS AVOIDS RACE CONDITIONS
-// THIS DEFINES PER PLAYER UPDATES
-// THE KEY CAN BE GAMEID-PLAYERID, so you have player choices bound to game use hash
-// store should have: chosen topics, imposter
-
-
 // GAME OBJECT
+
+// TODO: CREATE method that keeps track of the game state 
+// and whenever the client requests state (upon reconnect) current state can be sent
 
 export class Game {
     public gameId: string 
@@ -46,6 +38,11 @@ export class Game {
 
     private pairingsPerRound: number[][][]
     private duration: number
+    private topicQuestion: string
+    private topicOptions: string[]
+    private imposterLabel: string
+    private playerLabel: string
+    private playerColors: string[]
 
     constructor(
       gameId: string,
@@ -59,14 +56,18 @@ export class Game {
       imposter = Math.floor(Math.random() * 4)
     }
 
-    // Initialize class properties
     this.gameId = gameId
     this.players = players
     this.pairingsPerRound = [[[0,1], [2,3]], [[0,2], [1,3]], [[0,3], [1,2]]]
     this.imposter = imposter
     this.gameOngoing = gameOngoing
     this.currentRound = currentRound
-    this.duration = 30000 
+    this.duration = 10  // in seconds
+    this.topicQuestion = "Who is your favorite singer?" 
+    this.topicOptions = ["Michael Jackson", "Birtnet Psiers", "George michel", "Arana Grando"]
+    this.imposterLabel = "Imposter"
+    this.playerLabel = "Player"
+    this.playerColors = ["Yellow", "Green", "Blue", "Red"]
   }
 
   nextRound() {
@@ -79,8 +80,27 @@ export class Game {
   // ADD METHODS HERE THAT COMMUNICATE THE STATE OF THE GAME
   // states can be "game state <description of state>"
   // The game can figure out what the state should be
+  
+  async showChooseTopicScreen(io: SocketIOServer) {
+    this.players.forEach((player) => {
+      io.to(player.userId).emit("game state choose topic", {
+          topicQuestion: this.topicQuestion, 
+          topicOptions: this.topicOptions,
+          playerRole: this.getPlayerRole(player),
+          playerColor: this.getPlayerColor(player),
+      })
+    })
+  }
  
-  async sendPartnerToPlayer(io: SocketIOServer, messageStore: RedisMessageStore, player: Player) {
+  showVotingScreen(io: SocketIOServer) {
+    this.players.forEach((player) => {
+      const playerColor = this.getPlayerColor(player)
+      const playerRole = this.getPlayerRole(player)
+      io.to(player.userId).emit("game state show voting screen",  {playerColor, playerRole})
+    })
+  }
+
+  async sendPartnerToPlayer(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore, player: Player) {
     if (this.gameOngoing === false) {
       return
     }
@@ -102,17 +122,54 @@ export class Game {
           connected: true,
           messages: messages
         })
-        io.to(player.userId).emit("game state show infoscreen", `You are now going to talk to ${partner.userId}` )
+        this.showInfoScreen(io, player, `You are now going to talk to ${partner.userId}`)
         io.to(player.userId).emit("game state users", users)
         io.to(partner.userId).emit("game state partner connected", player.userId)
+        this.sendChatRoundInfo(io, playerDataStore, player, partner)
         return
       }
     }
+  }
 
+  async sendPartnerToAllPlayers(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
+    this.players.forEach((player) => {
+      this.sendPartnerToPlayer(io, messageStore, playerDataStore, player)
+    })
+  }
+
+  async sendChatRoundInfo(io: SocketIOServer, playerDataStore: PlayerDataStore, user: Player, partner: Player) {
+    const yourChosenTopic = await playerDataStore.getPlayerData(this.gameId, user, "topic")
+    const partnerChosenTopic = await playerDataStore.getPlayerData(this.gameId, partner, "topic")
+
+    io.to(user.userId).emit("game state chat round info", {
+      yourRole: this.getPlayerRole(user),
+      yourColor: this.getPlayerColor(user),
+      partnerColor: this.getPlayerColor(partner),
+      yourChosenTopic: yourChosenTopic,
+      partnerChosenTopic: partnerChosenTopic,
+    })
+  }
+
+  showInfoScreen(io: SocketIOServer, player: Player, message: string) {
+    io.to(player.userId).emit("game state show infoscreen",  message)
   }
 
   findPlayerIndex(player: Player) {
     return this.players.findIndex(obj => obj.userId === player.userId);
+  }
+
+  getPlayerColor(player: Player): string {
+    const index = this.findPlayerIndex(player)
+    return this.playerColors[index]
+  }
+
+  getPlayerRole(player: Player): string {
+    const index = this.findPlayerIndex(player)
+    if (index === this.imposter) {
+      return this.imposterLabel
+    } else {
+      return this.playerLabel
+    }
   }
 
   registerGame(sessionStore: RedisSessionStore) {
@@ -127,21 +184,19 @@ export class Game {
     })
   }
 
-  endGame(io: SocketIOServer) {
+  sendEndGame(io: SocketIOServer) {
     this.players.forEach((player) => {
       io.to(player.userId).emit("game state end")
     })
   }
 
-  async sendPartnerToAllPlayers(io: SocketIOServer, messageStore: RedisMessageStore) {
-    this.players.forEach((player) => {
-      this.sendPartnerToPlayer(io, messageStore, player)
-    })
+  async sleep(seconds: number) {
+    await sleep(seconds * 1000) 
   }
 
   async sleepAndUpdateProgress(io: SocketIOServer) {
     const updateRounds = 10
-    const secondsArr = divideIntegerIntoParts(this.duration, updateRounds) // array of ms
+    const secondsArr = divideIntegerIntoParts(this.duration * 1000, updateRounds) // array of ms
     for (let i = 0; i < secondsArr.length; i++) {
       const seconds = secondsArr[i]
       await sleep(seconds) 
@@ -199,6 +254,31 @@ export class GameStore {
       .exec();
   }
 }
+
+// PLAYER DATA STORE
+
+export class PlayerDataStore {
+  private  redisClient
+
+  constructor(redisClient: Redis) {
+    this.redisClient = redisClient;
+  }
+
+  setPlayerData(gameId: string, player: Player, fieldName: string, value: string): void {
+    this.redisClient
+      .hset(`player:${gameId}:${player.sessionId}`, fieldName, value)
+  }
+
+  async getPlayerData(gameId: string, player: Player, fieldName: string): Promise<string> {
+    let value = await this.redisClient
+      .hget(`player:${gameId}:${player.sessionId}`, fieldName)
+    if (value === null) {
+      value = ""
+    }
+    return value
+  }
+}
+
 
 
 // HELPERS

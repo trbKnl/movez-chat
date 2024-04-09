@@ -25,7 +25,7 @@ import ProgressBar from "./ProgressBar.vue";
 
 export default {
   name: "InfoScreen",
-  emits: ["infoScreenTimerComplete"],
+  emits: ["close"],
   components: { ProgressBar },
   props: [ "infoText" ],
   data() {
@@ -46,14 +46,10 @@ export default {
         
         if (currentProgress >= 100) {
           clearInterval(interval);
-          this.closeInfoScreen()
+          this.$emit('close');
         }
       }, increment);
     },
-
-    closeInfoScreen() {
-      this.$emit('CloseInfoScreen');
-    }
   },
   created() {
      this.startProgressBarTimer(this.progressBarDuration);

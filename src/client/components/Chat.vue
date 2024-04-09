@@ -6,7 +6,15 @@
       <waiting />
    </div>
 
-   <div v-else-if="!showThankYou">
+   <div v-else-if="showChooseTopic">
+      <TopicScreen :playerColor="playerColor" :role="role" :topicQuestion="topicQuestion" :topicOptions="topicOptions"/>
+   </div>
+
+   <div v-else-if="showVotingScreen">
+      <VotingScreen :yourColor="playerColor" :yourRole="role"/>
+   </div>
+
+   <div v-else-if="showChatScreen">
       <div class="flex">
          <!-- Left Panel Content -->
          <div class="w-1/3 bg-gray-300">
@@ -26,6 +34,11 @@
                   @select="setActiveUser(user)"
                   />
               <progress-bar :value="chatRoundProgressValue" />
+              <h3>Your color: {{ yourColor }}</h3>
+              <h3>Your chosen topic: {{ yourChosenTopic }}</h3>
+              <h3>Your role: {{ yourRole }}</h3>
+              <h3>Partner color: {{ partnerColor }}</h3>
+              <h3>Partner chosen topic: {{ partnerChosenTopic }}</h3>
             </div>
          </div>
          <!-- Right Panel Content -->
@@ -47,11 +60,11 @@
          </div>
       </div>
       <div v-else-if="showInfoScreen">
-         <info-screen :info-text="infoText" @closeInfoScreen="handleCloseInfoScreen()" />
+         <info-screen :info-text="infoText" @close="handleCloseInfoScreen()" />
       </div>
    </div>
 
-   <thank-you v-else @submit-suggestion="handleSuggestion"></thank-you>
+   <thank-you v-else-if="showThankYou" @submit-suggestion="handleSuggestion"></thank-you>
 </div>
 
 </template>
@@ -65,6 +78,9 @@ import Card from './Card.vue';
 import Waiting from './Waiting.vue';
 import InfoScreen from './InfoScreen.vue';
 import ProgressBar from './ProgressBar.vue';
+import TopicScreen from './TopicScreen.vue'
+import VotingScreen from './VotingScreen.vue'
+
 
 export default {
   name: "Chat",
@@ -75,22 +91,36 @@ export default {
     Card,
     Waiting,
     InfoScreen,
-    ProgressBar 
+    ProgressBar,
+    TopicScreen,
+    VotingScreen,
   },
   data() {
     return {
       selectedUser: null,
       users: [],
-      cardFlipped: true,
-      randomMessage: '',
-      showDialog: false,
-      shownMessages: [],
-      showThankYou: false,
+
+      // These are controled using a method called showScreen()
       showWaiting: true,
-      chatRoundProgressValue: 0,
+      showChooseTopic: false,
+      showChatScreen: false,
+      showVotingScreen: false,
+      showThankYou: false,
+
       showQuitConfirmation: false,
-      showInfoScreen: true,
-      infoText: "DjoMomma"
+      showInfoScreen: false,
+
+      chatRoundProgressValue: 0,
+      infoText: "",
+      playerColor: "",
+      role: "",
+      topicOptions: ["a", "b", "c"],
+      topicQuestion: "Question?",
+      yourColor: "",
+      yourRole: "",
+      partnerColor: "",
+      yourChosenTopic: "",
+      partnerChosenTopic: "",
     };
   },
   methods: {
@@ -105,6 +135,19 @@ export default {
           fromSelf: true,
         });
       }
+    },
+
+    // These screens are controlled using flags
+    showScreen(inputFlag) {
+        this.showWaiting = inputFlag === 'showWaiting'
+        this.showChooseTopic = inputFlag === 'showChooseTopic'
+        this.showChatScreen = inputFlag === 'showChatScreen'
+        this.showVotingScreen = inputFlag === 'showVotingScreen'
+        this.showThankYou = inputFlag === 'showThankYou'
+    },
+
+    handleCloseInfoScreen() {
+      this.showInfoScreen = false
     },
 
     setActiveUser(user) {
@@ -130,17 +173,6 @@ export default {
       socket.emit("suggestion", suggestion)
     },
 
-    closeWaiting(nUsers) {
-      if (nUsers > 0) {
-          console.log(nUsers)
-          this.showWaiting = false
-      }
-    },
-
-    handleCloseInfoScreen() {
-      this.showInfoScreen = false
-    },
-
   },
   created() {
     socket.on("connect", () => {
@@ -159,17 +191,13 @@ export default {
       });
     });
 
-    // Check if overlay can be closed upon creation
-    this.closeWaiting(this.users.length)
-
     const initReactiveProperties = (user) => {
       user.hasNewMessages = false;
     };
 
     // USER CONNECTION EVENTS LISTENERS
     socket.on("game state users", (users) => {
-      console.log("USERS EVENT")
-      this.closeWaiting(users.length)
+      this.showScreen("showChatScreen")
       this.users = []
 
       users.forEach((user) => {
@@ -236,7 +264,7 @@ export default {
 
     // GAME EVENT LISTENERS
     socket.on("game state end", () => {
-      this.confirmQuit()
+      this.showScreen("showThankYou")
     })
 
     socket.on("game state progress update", (progress) => {
@@ -246,6 +274,28 @@ export default {
     socket.on("game state show infoscreen", (message) => {
       this.showInfoScreen = true
       this.infoText = message
+    })
+
+    socket.on("game state choose topic", ({topicQuestion, topicOptions, playerRole, playerColor}) => {
+      this.showScreen("showChooseTopic")
+      this.topicQuestion = topicQuestion
+      this.topicOptions = topicOptions
+      this.role = playerRole
+      this.playerColor = playerColor
+    })
+
+    socket.on("game state chat round info", ({yourRole, yourColor, partnerColor, yourChosenTopic, partnerChosenTopic}) => {
+      this.yourColor = yourColor
+      this.yourRole = yourRole
+      this.partnerColor = partnerColor
+      this.yourChosenTopic = yourChosenTopic
+      this.partnerChosenTopic = partnerChosenTopic
+    })
+
+    socket.on("game state show voting screen", ({playerColor, playerRole}) => {
+      this.showScreen("showVotingScreen")
+      this.yourColor = playerColor
+      this.role = playerRole
     })
 
   },
