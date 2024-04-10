@@ -4,7 +4,7 @@
     <div class="z-50 text-center">
 
       <div v-if="yourRole === 'Imposter'" class="bg-white p-8 rounded-lg shadow-lg">
-        <p class="text-lg font-semibold text-gray-800 mb-2">You were the imposter </p>
+        <p class="text-lg font-semibold text-gray-800 mb-2">Player score </p>
         <p>The other players are now voting who they think was the imposter</p>
       </div>
 
@@ -25,14 +25,11 @@ export default {
     TopicMenu
   },
   data() {
-    return {
-      chosenImposter: "",
-    };
   },
   props: [ 
-    "yourColor",
-    "yourRole",
-    "playerColors"
+    "playerWon",
+    "playerScore",
+    "imposterScore"
   ],
   computed: {
     playerColorsNotYourOwn() {

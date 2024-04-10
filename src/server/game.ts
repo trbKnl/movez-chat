@@ -14,15 +14,54 @@ export const PlayerSchema = z.object({
 
 export type Player = z.infer<typeof PlayerSchema>
 
+export const GameStateSchema = z.union([
+  z.literal('choose topic'),
+  z.literal('chatting'),
+  z.literal('voting'),
+  z.literal('results'),
+  z.literal('end'),
+]);
+
+type GameState = z.infer<typeof GameStateSchema>;
+
+
 export const GameDataSchema = z.object({
   gameId: z.string(),
   players: z.array(PlayerSchema),
   imposter: z.number(),
-  gameOngoing: z.boolean(),
   currentRound: z.number(),
+  gameState: GameStateSchema,
 })
 
 export type GameData = z.infer<typeof GameDataSchema>
+
+export const ChooseTopicScreenDataSchema = z.object({
+  topicQuestion: z.string(),
+  topicOptions: z.array(z.string()),
+  playerRole: z.string(),
+  playerColor: z.string(),
+})
+
+export type ChooseTopicScreenData = z.infer<typeof ChooseTopicScreenDataSchema>
+
+export const VotingScreenDataSchema = z.object({
+  playerColor: z.string(),
+  playerRole: z.string(),
+  playerColors: z.array(z.string()),
+})
+
+export type VotingScreenData = z.infer<typeof VotingScreenDataSchema>
+
+export const ResultScreenDataSchema = z.object({
+  playerScore: z.number(),
+  playerRole: z.string(),
+  imposterScore: z.number(),
+  imposterColor: z.string(),
+  playerWon: z.boolean().optional(),
+})
+
+export type ResultScreenData = z.infer<typeof ResultScreenDataSchema>
+
 
 // GAME OBJECT
 
@@ -33,8 +72,8 @@ export class Game {
     public gameId: string 
     public players: Player[]
     public imposter: number 
-    public gameOngoing: boolean
     public currentRound: number
+    public gameState: GameState
 
     private pairingsPerRound: number[][][]
     private duration: number
@@ -48,8 +87,8 @@ export class Game {
       gameId: string,
       players:  Player[],
       imposter?: number,
-      gameOngoing = true,
-      currentRound = 0
+      currentRound = 0,
+      gameState: GameState = "choose topic",
     ) {
 
     if (imposter === undefined) {
@@ -58,10 +97,11 @@ export class Game {
 
     this.gameId = gameId
     this.players = players
-    this.pairingsPerRound = [[[0,1], [2,3]], [[0,2], [1,3]], [[0,3], [1,2]]]
     this.imposter = imposter
-    this.gameOngoing = gameOngoing
     this.currentRound = currentRound
+    this.gameState = gameState
+
+    this.pairingsPerRound = [[[0,1], [2,3]], [[0,2], [1,3]], [[0,3], [1,2]]]
     this.duration = 10  // in seconds
     this.topicQuestion = "Who is your favorite singer?" 
     this.topicOptions = ["Michael Jackson", "Birtnet Psiers", "George michel", "Arana Grando"]
@@ -70,10 +110,66 @@ export class Game {
     this.playerColors = ["Yellow", "Green", "Blue", "Red"]
   }
 
+  async play(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
+    await this.save(gameStore)
+    while (this.gameState !== "end") {
+      await this.playState(io, gameStore, messageStore, playerDataStore)
+      await this.save(gameStore)
+      this.nextGameState()
+    }
+  }
+
+  async playState(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
+    switch (this.gameState) {
+      case "choose topic":
+        this.showChooseTopicScreenForAll(io);
+        await sleep(30)
+        break;
+      case "chatting":
+        this.save(gameStore)
+        while (this.currentRound < 2) {
+          await this.showChatScreenForAll(io, messageStore, playerDataStore)
+          await this.sleepAndUpdateProgress(io)
+          this.nextRound()
+          this.save(gameStore)
+        }
+        break;
+      case "voting":
+        this.showVotingScreenForAll(io)
+        await sleep(20)
+      case "results":
+        await this.sendResultScreen(io, playerDataStore)
+        await sleep(30)
+        break;
+      case "end":
+        this.sendEndGame(io)
+        break;
+    }
+  }
+
+  async syncGameForSinglePlayer(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore, player: Player) {
+    switch (this.gameState) {
+      case "choose topic":
+        this.showChooseTopicScreen(io, player);
+        break;
+      case "chatting":
+        await this.showChatScreen(io, messageStore, playerDataStore, player)
+        break;
+      case "voting":
+        this.showVotingScreen(io, player)
+        break;
+    }
+  }
+
   nextRound() {
     this.currentRound += 1
-    if (this.currentRound > 2) {
-      this.gameOngoing = false
+  }
+
+  nextGameState() {
+    if (this.gameState !== "end") {
+      const allGameStates: GameState[] = ["choose topic", "chatting", "voting", "results", "end"];
+      const i = allGameStates.indexOf(this.gameState);
+      this.gameState = allGameStates[i + 1]
     }
   }
 
@@ -81,29 +177,38 @@ export class Game {
   // states can be "game state <description of state>"
   // The game can figure out what the state should be
   
-  async showChooseTopicScreen(io: SocketIOServer) {
-    this.players.forEach((player) => {
-      io.to(player.userId).emit("game state choose topic", {
+  showChooseTopicScreen(io: SocketIOServer, player: Player) {
+      const chooseTopicScreenData: ChooseTopicScreenData = {
           topicQuestion: this.topicQuestion, 
           topicOptions: this.topicOptions,
           playerRole: this.getPlayerRole(player),
           playerColor: this.getPlayerColor(player),
-      })
+      }
+      io.to(player.userId).emit("game state choose topic", chooseTopicScreenData)
+  }
+ 
+  showChooseTopicScreenForAll(io: SocketIOServer) {
+    this.players.forEach((player) => {
+      this.showChooseTopicScreen(io, player)
     })
   }
  
-  showVotingScreen(io: SocketIOServer) {
-    this.players.forEach((player) => {
-      const playerColor = this.getPlayerColor(player)
-      const playerRole = this.getPlayerRole(player)
-      io.to(player.userId).emit("game state show voting screen",  {playerColor, playerRole})
-    })
+  showVotingScreen(io: SocketIOServer, player: Player) {
+    const votingScreenData: VotingScreenData = {
+      playerColor: this.getPlayerColor(player),
+      playerRole: this.getPlayerRole(player),
+      playerColors: this.playerColors,
+    }
+    io.to(player.userId).emit("game state show voting screen", votingScreenData)
   }
 
-  async sendPartnerToPlayer(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore, player: Player) {
-    if (this.gameOngoing === false) {
-      return
-    }
+  showVotingScreenForAll(io: SocketIOServer) {
+    this.players.forEach((player) => {
+      this.showVotingScreen(io, player)
+    })
+  }
+ 
+  async showChatScreen(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore, player: Player) {
     const currentRoundPairs = this.pairingsPerRound[this.currentRound]
     const playerIndex = this.findPlayerIndex(player)
     for (const pair of currentRoundPairs) {
@@ -131,9 +236,9 @@ export class Game {
     }
   }
 
-  async sendPartnerToAllPlayers(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
+  async showChatScreenForAll(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
     this.players.forEach((player) => {
-      this.sendPartnerToPlayer(io, messageStore, playerDataStore, player)
+      this.showChatScreen(io, messageStore, playerDataStore, player)
     })
   }
 
@@ -150,12 +255,45 @@ export class Game {
     })
   }
 
+  async sendResultScreen(io: SocketIOServer, playerDataStore: PlayerDataStore) {
+    const imposterColor = this.getPlayerColor(this.getPlayerByIndex(this.imposter))
+    let individualResults = new Map()
+    let playerScore = 0
+    let imposterScore = 0
+    for (const player of this.players) {
+      if (!this.isImposter(player)) {
+        const chosenImposterColor = await playerDataStore.getPlayerData(this.gameId, player, "imposter")
+        const playerWon = imposterColor === chosenImposterColor
+        individualResults.set(player.sessionId, playerWon)
+        if (playerWon) {
+          playerScore += 1
+        } else {
+          imposterScore += 1
+        }
+      }
+    }
+    this.players.forEach((player) => {
+      const resultScreenData: ResultScreenData = {
+        playerScore: playerScore,
+        playerRole: this.getPlayerRole(player),
+        imposterScore: imposterScore,
+        imposterColor: imposterColor,
+        playerWon: individualResults.get(player.sessionId), // optional
+      }
+      io.to(player.userId).emit("game state result screen", resultScreenData)
+    })
+  }
+
   showInfoScreen(io: SocketIOServer, player: Player, message: string) {
     io.to(player.userId).emit("game state show infoscreen",  message)
   }
 
   findPlayerIndex(player: Player) {
     return this.players.findIndex(obj => obj.userId === player.userId);
+  }
+
+  getPlayerByIndex(index: number): Player {
+    return this.players[index]
   }
 
   getPlayerColor(player: Player): string {
@@ -170,6 +308,10 @@ export class Game {
     } else {
       return this.playerLabel
     }
+  }
+
+  isImposter(player: Player): boolean {
+    return this.getPlayerRole(player) === this.imposterLabel
   }
 
   registerGame(sessionStore: RedisSessionStore) {
@@ -190,13 +332,9 @@ export class Game {
     })
   }
 
-  async sleep(seconds: number) {
-    await sleep(seconds * 1000) 
-  }
-
   async sleepAndUpdateProgress(io: SocketIOServer) {
     const updateRounds = 10
-    const secondsArr = divideIntegerIntoParts(this.duration * 1000, updateRounds) // array of ms
+    const secondsArr = divideIntegerIntoParts(this.duration, updateRounds) // array of ms
     for (let i = 0; i < secondsArr.length; i++) {
       const seconds = secondsArr[i]
       await sleep(seconds) 
@@ -207,11 +345,22 @@ export class Game {
     }
   }
 
+  async save(gameStore: GameStore) {
+    const gameData: GameData = {
+      gameId: this.gameId,
+      players: this.players,
+      imposter: this.imposter,
+      currentRound: this.currentRound,
+      gameState: this.gameState,
+    }
+    await gameStore.save(gameData)
+  }
+
   // STATIC METHODS
   
   static createFromObject(game: GameData): Game {
-    const { gameId, players, imposter, gameOngoing, currentRound } = game
-    return new Game( gameId, players, imposter, gameOngoing, currentRound )
+    const { gameId, players, imposter, currentRound, gameState } = game
+    return new Game( gameId, players, imposter, currentRound, gameState )
   }
 }
 
@@ -243,7 +392,7 @@ export class GameStore {
     }
   }
 
-  async save(game: Game) {
+  async save(game: GameData) {
     const encodedGame = Buffer.from(encode(game))
     await this.redisClient.multi().hset(
         `game:${game.gameId}`,
@@ -283,8 +432,8 @@ export class PlayerDataStore {
 
 // HELPERS
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function sleep(s: number) {
+  return new Promise(resolve => setTimeout(resolve, s * 1000));
 }
 
 export function isPlayerInArray(playerArray: Player[], playerToCheck: Player): boolean {

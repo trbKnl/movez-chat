@@ -7,11 +7,11 @@
    </div>
 
    <div v-else-if="showChooseTopic">
-      <TopicScreen :playerColor="playerColor" :role="role" :topicQuestion="topicQuestion" :topicOptions="topicOptions"/>
+      <TopicScreen :playerColor="playerColor" :role="yourRole" :topicQuestion="topicQuestion" :topicOptions="topicOptions"/>
    </div>
 
    <div v-else-if="showVotingScreen">
-      <VotingScreen :yourColor="playerColor" :yourRole="role"/>
+      <VotingScreen :yourColor="playerColor" :yourRole="yourRole" :playerColors="playerColors"/>
    </div>
 
    <div v-else-if="showChatScreen">
@@ -64,6 +64,7 @@
       </div>
    </div>
 
+    <!--<ResultScreen v-else-if="showResultScreen"></ResultScreen>-->
    <thank-you v-else-if="showThankYou" @submit-suggestion="handleSuggestion"></thank-you>
 </div>
 
@@ -74,12 +75,13 @@ import socket from "../socket";
 import User from "./User.vue";
 import MessagePanel from "./MessagePanel.vue";
 import ThankYou from './ThankYou.vue';
-import Card from './Card.vue';
 import Waiting from './Waiting.vue';
 import InfoScreen from './InfoScreen.vue';
 import ProgressBar from './ProgressBar.vue';
 import TopicScreen from './TopicScreen.vue'
 import VotingScreen from './VotingScreen.vue'
+//import ResultScreen from './ResultScreen.vue'
+
 
 
 export default {
@@ -88,39 +90,51 @@ export default {
     User, 
     MessagePanel,
     ThankYou,
-    Card,
     Waiting,
     InfoScreen,
     ProgressBar,
     TopicScreen,
     VotingScreen,
+    //ResultScreen,
   },
   data() {
     return {
       selectedUser: null,
       users: [],
 
+      // TODO CHANGE THIS CODE TO TYPESCRIPT ORGANISE INPUTS
+
       // These are controled using a method called showScreen()
       showWaiting: true,
       showChooseTopic: false,
       showChatScreen: false,
       showVotingScreen: false,
+      showResultScreen: false,
       showThankYou: false,
 
       showQuitConfirmation: false,
       showInfoScreen: false,
 
+      // progress bar data
       chatRoundProgressValue: 0,
-      infoText: "",
-      playerColor: "",
-      role: "",
-      topicOptions: ["a", "b", "c"],
-      topicQuestion: "Question?",
+
+      // chat round info data
       yourColor: "",
+      yourChosenTopic: "",
       yourRole: "",
       partnerColor: "",
-      yourChosenTopic: "",
       partnerChosenTopic: "",
+
+      // info text data
+      infoText: "",
+
+      // Voting
+      playerColor: "",
+      playerColors: ["a", "b", "c"],
+
+      // Topic
+      topicOptions: ["a", "b", "c"],
+      topicQuestion: "Question?",
     };
   },
   methods: {
@@ -143,6 +157,7 @@ export default {
         this.showChooseTopic = inputFlag === 'showChooseTopic'
         this.showChatScreen = inputFlag === 'showChatScreen'
         this.showVotingScreen = inputFlag === 'showVotingScreen'
+        this.showResultScreen = inputFlag === 'showResultScreen'
         this.showThankYou = inputFlag === 'showThankYou'
     },
 
@@ -292,10 +307,11 @@ export default {
       this.partnerChosenTopic = partnerChosenTopic
     })
 
-    socket.on("game state show voting screen", ({playerColor, playerRole}) => {
+    socket.on("game state show voting screen", ({playerColor, playerRole, playerColors}) => {
       this.showScreen("showVotingScreen")
       this.yourColor = playerColor
       this.role = playerRole
+      this.playerColors = playerColors
     })
 
   },

@@ -116,42 +116,42 @@ io.use(async (socket, next) => {
   console.log("=====")
 
   // If we can find a session restore it 
-  //const session = await sessionStore.findSession(sessionId)
-  //if (session !== undefined) {
-  //  console.log(`Loaded from session, sessionId: ${sessionId}`)
-  //  console.log(`Loaded from session, gameId: ${session.gameId}`)
-  //  const userSessionData: UserSessionData = {
-  //    sessionId: sessionId,
-  //    userId: session.userId,
-  //    gameId: session.gameId,
-  //    connected: session.connected,
-  //  }
-  //  socket.data.userSessionData = userSessionData
-  //  return next()
-  //}
-  //console.log("===============")
-  //console.log("not loaded from session creating a new one")
-  //console.log("===============")
+  const session = await sessionStore.findSession(sessionId)
+  if (session !== undefined) {
+    console.log(`Loaded from session, sessionId: ${sessionId}`)
+    console.log(`Loaded from session, gameId: ${session.gameId}`)
+    const userSessionData: UserSessionData = {
+      sessionId: sessionId,
+      userId: session.userId,
+      gameId: session.gameId,
+      connected: session.connected,
+    }
+    socket.data.userSessionData = userSessionData
+    return next()
+  }
+  console.log("===============")
+  console.log("not loaded from session creating a new one")
+  console.log("===============")
 
-  //// This can only be the case when connecting to socket.io server not through the browser
-  //// For example when testing the server load
-  //if (sessionId === undefined) { 
-  //  sessionId = randomId()
-  //}
-//
-//  const userSessionData: UserSessionData = {
-//    sessionId: sessionId,
-//    userId: randomId(),
-//    gameId: "",
-//    connected: true,
-//  }
+  // This can only be the case when connecting to socket.io server not through the browser
+  // For example when testing the server load
+  if (sessionId === undefined) { 
+    sessionId = randomId()
+  }
 
   const userSessionData: UserSessionData = {
-    sessionId: randomId(),
+    sessionId: sessionId,
     userId: randomId(),
     gameId: "",
     connected: true,
   }
+
+  //const userSessionData: UserSessionData = {
+  //  sessionId: randomId(),
+  //  userId: randomId(),
+  //  gameId: "",
+  //  connected: true,
+  //}
   sessionStore.saveSession(userSessionData)
 
   socket.data.userSessionData = userSessionData
@@ -178,9 +178,9 @@ io.on("connection", async (socket) => {
   // If game found load game else join queue
   let game = await gameStore.load(socket.data.userSessionData.gameId)
 
-  if (game !== undefined && game.gameOngoing === true) {
+  if (game !== undefined) {
     console.log("Already in a game")
-    await game.sendPartnerToPlayer(io, messageStore, playerDataStore, player)
+    await game.syncGameForSinglePlayer(io, messageStore, playerDataStore, player)
   } else {
     console.log("Not in a game add player to game")
     await waitingQueue.add("participant", player)
@@ -210,12 +210,21 @@ io.on("connection", async (socket) => {
   })
 
   // socket on game logic
+  //
   socket.on("game state set topic", async ({chosenTopic}) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
     if (userSessionData !== undefined) {
       playerDataStore.setPlayerData(userSessionData.gameId, player, "topic", chosenTopic)
     }
   })
+
+  socket.on("game state set chosen imposter", async ({chosenImposter}) => {
+    const userSessionData = await sessionStore.findSession(player.sessionId)
+    if (userSessionData !== undefined) {
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "imposter", chosenImposter)
+    }
+  })
+
 })
 
 
@@ -288,31 +297,14 @@ async function gameLoop(players: Player[]) {
     let gameId = randomId()
     let game  = new Game(gameId, players)
 
-    game.nextRound()
-    await gameStore.save(game)
-
     // Register game with players
     game.registerGame(sessionStore)
 
-    game.showChooseTopicScreen(io)
-    await game.sleep(10)
+    await game.play(io, gameStore, messageStore, playerDataStore)
 
-    // Main game loop
-    while (game.gameOngoing) {
-      await game.sendPartnerToAllPlayers(io, messageStore, playerDataStore)
-      await game.sleepAndUpdateProgress(io)
-
-      game.nextRound()
-      await gameStore.save(game)
-    }
-
-    game.showVotingScreen(io)
-    await game.sleep(30)
-
+    // unregister the game
     game.unregisterGame(sessionStore)
-    game.sendEndGame(io)
 
-    console.log("END GAME")
   } catch (error) {
     console.log(error)
   }
