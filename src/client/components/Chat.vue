@@ -1,24 +1,21 @@
 <template>
 
 <div>
-   <!-- Full Screen Overlay -->
    <div v-if="showWaiting">
       <waiting />
    </div>
 
    <div v-else-if="showChooseTopic">
-      <TopicScreen :playerColor="playerColor" :role="yourRole" :topicQuestion="topicQuestion" :topicOptions="topicOptions"/>
+      <TopicScreen v-bind="propsChooseTopicScreen"/>
    </div>
 
    <div v-else-if="showVotingScreen">
-      <VotingScreen :yourColor="playerColor" :yourRole="yourRole" :playerColors="playerColors"/>
+      <VotingScreen v-bind="propsVotingScreen"/>
    </div>
 
    <div v-else-if="showChatScreen">
       <div class="flex">
-         <!-- Left Panel Content -->
          <div class="w-1/3 bg-gray-300">
-            <!-- Active Users Section -->
             <div class="p-3">
                <div class="flex items-center justify-between p-4">
                   <h2 class="font-semibold">Currently Online</h2>
@@ -34,14 +31,15 @@
                   @select="setActiveUser(user)"
                   />
               <progress-bar :value="chatRoundProgressValue" />
-              <h3>Your color: {{ yourColor }}</h3>
-              <h3>Your chosen topic: {{ yourChosenTopic }}</h3>
-              <h3>Your role: {{ yourRole }}</h3>
-              <h3>Partner color: {{ partnerColor }}</h3>
-              <h3>Partner chosen topic: {{ partnerChosenTopic }}</h3>
+
+              <h3>Your color: {{ propsChatRound.playerColor }}</h3>
+              <h3>Your chosen topic: {{ propsChatRound.playerColor }}</h3>
+              <h3>Your role: {{ propsChatRound.playerRole }}</h3>
+              <h3>Partner color: {{ propsChatRound.partnerColor }}</h3>
+              <h3>Partner chosen topic: {{ propsChatRound.partnerChosenTopic }}</h3>
+
             </div>
          </div>
-         <!-- Right Panel Content -->
          <div class="w-2/3">
             <message-panel
                v-if="selectedUser"
@@ -50,22 +48,15 @@
                />
          </div>
       </div>
-      <!-- Quit Confirmation Modal -->
-      <div v-if="showQuitConfirmation" class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
-         <div class="bg-white p-8 rounded-lg">
-            <h2 class="text-xl font-bold mb-4">Confirm Quit</h2>
-            <p>Are you sure you want to quit the game?</p>
-            <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="confirmQuit">Yes, Quit</button>
-            <button class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md m-3" @click="cancelQuit">Cancel</button>
-         </div>
-      </div>
-      <div v-else-if="showInfoScreen">
+
+      <div v-if="showInfoScreen">
          <info-screen :info-text="infoText" @close="handleCloseInfoScreen()" />
       </div>
    </div>
 
-    <!--<ResultScreen v-else-if="showResultScreen"></ResultScreen>-->
-   <thank-you v-else-if="showThankYou" @submit-suggestion="handleSuggestion"></thank-you>
+   <div v-else-if="showResultScreen">
+      <ResultScreen v-bind="propsResultScreen"></ResultScreen>
+   </div>
 </div>
 
 </template>
@@ -74,13 +65,12 @@
 import socket from "../socket";
 import User from "./User.vue";
 import MessagePanel from "./MessagePanel.vue";
-import ThankYou from './ThankYou.vue';
 import Waiting from './Waiting.vue';
 import InfoScreen from './InfoScreen.vue';
 import ProgressBar from './ProgressBar.vue';
 import TopicScreen from './TopicScreen.vue'
 import VotingScreen from './VotingScreen.vue'
-//import ResultScreen from './ResultScreen.vue'
+import ResultScreen from './ResultScreen.vue'
 
 
 
@@ -89,20 +79,19 @@ export default {
   components: { 
     User, 
     MessagePanel,
-    ThankYou,
     Waiting,
     InfoScreen,
     ProgressBar,
     TopicScreen,
     VotingScreen,
-    //ResultScreen,
+    ResultScreen,
   },
   data() {
     return {
       selectedUser: null,
       users: [],
 
-      // TODO CHANGE THIS CODE TO TYPESCRIPT ORGANISE INPUTS
+      // TODO CHANGE TO TYPESCRIPT
 
       // These are controled using a method called showScreen()
       showWaiting: true,
@@ -115,27 +104,14 @@ export default {
       showQuitConfirmation: false,
       showInfoScreen: false,
 
+      propsChooseTopicScreen: null,
+      propsVotingScreen: null,
+      propsChatRound: null,
+      propsResultScreen: null,
+
       // progress bar data
       chatRoundProgressValue: 0,
-
-      // chat round info data
-      yourColor: "",
-      yourChosenTopic: "",
-      yourRole: "",
-      partnerColor: "",
-      partnerChosenTopic: "",
-
-      // info text data
-      infoText: "",
-
-      // Voting
-      playerColor: "",
-      playerColors: ["a", "b", "c"],
-
-      // Topic
-      topicOptions: ["a", "b", "c"],
-      topicQuestion: "Question?",
-    };
+    }
   },
   methods: {
     onMessage(content) {
@@ -170,22 +146,6 @@ export default {
         this.selectedUser = user;
         user.hasNewMessages = false;
       }
-    },
-
-    quitGame() {
-      this.showQuitConfirmation = true;
-    },
-
-    confirmQuit() {
-      this.showThankYou = true;
-    },
-
-    cancelQuit() {
-      this.showQuitConfirmation = false;
-    },
-
-    handleSuggestion(suggestion) {
-      socket.emit("suggestion", suggestion)
     },
 
   },
@@ -277,11 +237,6 @@ export default {
       }
     });
 
-    // GAME EVENT LISTENERS
-    socket.on("game state end", () => {
-      this.showScreen("showThankYou")
-    })
-
     socket.on("game state progress update", (progress) => {
       this.chatRoundProgressValue = progress
     })
@@ -291,27 +246,23 @@ export default {
       this.infoText = message
     })
 
-    socket.on("game state choose topic", ({topicQuestion, topicOptions, playerRole, playerColor}) => {
-      this.showScreen("showChooseTopic")
-      this.topicQuestion = topicQuestion
-      this.topicOptions = topicOptions
-      this.role = playerRole
-      this.playerColor = playerColor
-    })
-
-    socket.on("game state chat round info", ({yourRole, yourColor, partnerColor, yourChosenTopic, partnerChosenTopic}) => {
-      this.yourColor = yourColor
-      this.yourRole = yourRole
-      this.partnerColor = partnerColor
-      this.yourChosenTopic = yourChosenTopic
-      this.partnerChosenTopic = partnerChosenTopic
-    })
-
-    socket.on("game state show voting screen", ({playerColor, playerRole, playerColors}) => {
+    socket.on("game state show voting screen", (data) => {
       this.showScreen("showVotingScreen")
-      this.yourColor = playerColor
-      this.role = playerRole
-      this.playerColors = playerColors
+      this.propsVotingScreen = data
+    })
+
+    socket.on("game state choose topic", (data) => {
+      this.showScreen("showChooseTopic")
+      this.propsChooseTopicScreen = data
+    })
+
+    socket.on("game state result screen", (data) => {
+      this.showScreen("showResultScreen")
+      this.propsResultScreen = data
+    })
+
+    socket.on("game state chat round info", (data) => {
+      this.propsChatRound = data
     })
 
   },

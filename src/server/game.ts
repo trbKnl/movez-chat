@@ -24,7 +24,6 @@ export const GameStateSchema = z.union([
 
 type GameState = z.infer<typeof GameStateSchema>;
 
-
 export const GameDataSchema = z.object({
   gameId: z.string(),
   players: z.array(PlayerSchema),
@@ -61,6 +60,16 @@ export const ResultScreenDataSchema = z.object({
 })
 
 export type ResultScreenData = z.infer<typeof ResultScreenDataSchema>
+
+export const ChatRoundDataSchema = z.object({
+  playerRole: z.string(),
+  playerColor: z.string(),
+  partnerColor: z.string(),
+  playerChosenTopic: z.string(),
+  partnerChosenTopic: z.string(),
+})
+
+export type ChatRoundData = z.infer<typeof ChatRoundDataSchema>
 
 
 // GAME OBJECT
@@ -111,12 +120,17 @@ export class Game {
   }
 
   async play(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
-    await this.save(gameStore)
     while (this.gameState !== "end") {
-      await this.playState(io, gameStore, messageStore, playerDataStore)
       await this.save(gameStore)
+      await this.playState(io, gameStore, messageStore, playerDataStore)
       this.nextGameState()
     }
+  }
+
+  nextGameState() {
+    const allGameStates: GameState[] = ["choose topic", "chatting", "voting", "results", "end"];
+    const i = allGameStates.indexOf(this.gameState);
+    this.gameState = allGameStates[i + 1]
   }
 
   async playState(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
@@ -126,8 +140,7 @@ export class Game {
         await sleep(30)
         break;
       case "chatting":
-        this.save(gameStore)
-        while (this.currentRound < 2) {
+        while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
           await this.sleepAndUpdateProgress(io)
           this.nextRound()
@@ -139,10 +152,8 @@ export class Game {
         await sleep(20)
       case "results":
         await this.sendResultScreen(io, playerDataStore)
-        await sleep(30)
-        break;
-      case "end":
-        this.sendEndGame(io)
+        await sleep(30) // CONTINUE HERE CCCCONTINUE HERE ONTINUE HERE ONTINUE HERE ONTINUE HERE
+
         break;
     }
   }
@@ -163,14 +174,6 @@ export class Game {
 
   nextRound() {
     this.currentRound += 1
-  }
-
-  nextGameState() {
-    if (this.gameState !== "end") {
-      const allGameStates: GameState[] = ["choose topic", "chatting", "voting", "results", "end"];
-      const i = allGameStates.indexOf(this.gameState);
-      this.gameState = allGameStates[i + 1]
-    }
   }
 
   // ADD METHODS HERE THAT COMMUNICATE THE STATE OF THE GAME
@@ -245,14 +248,14 @@ export class Game {
   async sendChatRoundInfo(io: SocketIOServer, playerDataStore: PlayerDataStore, user: Player, partner: Player) {
     const yourChosenTopic = await playerDataStore.getPlayerData(this.gameId, user, "topic")
     const partnerChosenTopic = await playerDataStore.getPlayerData(this.gameId, partner, "topic")
-
-    io.to(user.userId).emit("game state chat round info", {
-      yourRole: this.getPlayerRole(user),
-      yourColor: this.getPlayerColor(user),
+    const chatRoundData: ChatRoundData = {
+      playerRole: this.getPlayerRole(user),
+      playerColor: this.getPlayerColor(user),
       partnerColor: this.getPlayerColor(partner),
-      yourChosenTopic: yourChosenTopic,
+      playerChosenTopic: yourChosenTopic,
       partnerChosenTopic: partnerChosenTopic,
-    })
+    }
+    io.to(user.userId).emit("game state chat round info", chatRoundData)
   }
 
   async sendResultScreen(io: SocketIOServer, playerDataStore: PlayerDataStore) {
@@ -323,12 +326,6 @@ export class Game {
   unregisterGame(sessionStore: RedisSessionStore) {
     this.players.forEach((player) => {
       sessionStore.updateSessionField(player.sessionId, "gameId", "")
-    })
-  }
-
-  sendEndGame(io: SocketIOServer) {
-    this.players.forEach((player) => {
-      io.to(player.userId).emit("game state end")
     })
   }
 

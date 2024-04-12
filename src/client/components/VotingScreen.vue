@@ -3,7 +3,7 @@
     <div class="absolute w-full h-full bg-gray-800 opacity-50"></div> 
     <div class="z-50 text-center">
 
-      <div v-if="yourRole === 'Imposter'" class="bg-white p-8 rounded-lg shadow-lg">
+      <div v-if="playerRole === 'Imposter'" class="bg-white p-8 rounded-lg shadow-lg">
         <p class="text-lg font-semibold text-gray-800 mb-2">You were the imposter </p>
         <p>The other players are now voting who they think was the imposter</p>
       </div>
@@ -30,13 +30,13 @@ export default {
     };
   },
   props: [ 
-    "yourColor",
-    "yourRole",
-    "playerColors"
+    "playerColor",
+    "playerRole",
+    "playerColors",
   ],
   computed: {
     playerColorsNotYourOwn() {
-      return this.playerColors.filter(item => item !== this.yourColor);
+      return this.playerColors.filter(item => item !== this.playerColor);
     }
   },
   methods: {

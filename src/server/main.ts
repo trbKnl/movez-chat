@@ -178,7 +178,7 @@ io.on("connection", async (socket) => {
   // If game found load game else join queue
   let game = await gameStore.load(socket.data.userSessionData.gameId)
 
-  if (game !== undefined) {
+  if (game !== undefined && game.gameState !== "end") {
     console.log("Already in a game")
     await game.syncGameForSinglePlayer(io, messageStore, playerDataStore, player)
   } else {

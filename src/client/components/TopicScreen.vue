@@ -4,7 +4,7 @@
     <div class="z-50 text-center">
       <div class="bg-white p-8 rounded-lg shadow-lg">
         <p class="text-lg font-semibold text-gray-800 mb-2">{{ playerColor }} Player</p>
-        <p class="text-lg font-semibold text-gray-800 mb-2">Your role: {{ role }} </p>
+        <p class="text-lg font-semibold text-gray-800 mb-2">Your role: {{ playerRole }} </p>
         <p class="text-lg font-semibold text-gray-800 mb-2">{{ topicQuestion }} </p>
         <TopicMenu :menuOptions="topicOptions" @chosenOption="setChosenTopic"/>
       </div>
@@ -22,12 +22,12 @@ export default {
   },
   data() {
     return {
-      chosenTopic: "" // SEND THIS USING SOCKET.IO
+      chosenTopic: "" 
     };
   },
   props: [ 
     "playerColor",
-    "role",
+    "playerRole",
     "topicQuestion",
     "topicOptions",
   ],
