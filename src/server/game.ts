@@ -220,16 +220,15 @@ export class Game {
         }
 
         const partner = this.players[partnerIndex]
-        let users = []
         const messages = await getMessages(messageStore, player.userId, partner.userId)
-        users.push({
+        const user = {
           userId: partner.userId,
           username: partner.userId,
           connected: true,
           messages: messages
-        })
+        }
         this.showInfoScreen(io, player, `You are now going to talk to ${partner.userId}`)
-        io.to(player.userId).emit("game state users", users)
+        io.to(player.userId).emit("game state users", user)
         io.to(partner.userId).emit("game state partner connected", player.userId)
         this.sendChatRoundInfo(io, playerDataStore, player, partner)
         return

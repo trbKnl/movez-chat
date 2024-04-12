@@ -5,7 +5,7 @@
   >
     <div class="description">
       <div class="name">
-        {{ user.self ? "You" : user.username }}
+        {{ user.username }}
       </div>
       <div class="status">
         <status-icon :connected="user.connected" />{{ status }}

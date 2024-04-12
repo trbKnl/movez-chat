@@ -1,39 +1,34 @@
 <template>
 
 <div>
-   <div v-if="showWaiting">
+   <div v-if="currentScreen === 'Waiting'">
       <waiting />
    </div>
 
-   <div v-else-if="showChooseTopic">
+   <div v-else-if="currentScreen === 'ChooseTopic'">
       <TopicScreen v-bind="propsChooseTopicScreen"/>
    </div>
 
-   <div v-else-if="showVotingScreen">
+   <div v-else-if="currentScreen === 'VotingScreen'">
       <VotingScreen v-bind="propsVotingScreen"/>
    </div>
 
-   <div v-else-if="showChatScreen">
+   <div v-else-if="currentScreen === 'ChatScreen'">
       <div class="flex">
          <div class="w-1/3 bg-gray-300">
             <div class="p-3">
                <div class="flex items-center justify-between p-4">
                   <h2 class="font-semibold">Currently Online</h2>
-                  <button @click="quitGame" class="w-8 h-auto">
-                  <img src="/public/images/exit.svg" alt="Quit" />
-                  </button>
                </div>
                <user
-                  v-for="user in users"
                   :key="user.userId"
                   :user="user"
-                  :selected="selectedUser === user"
-                  @select="setActiveUser(user)"
+                  :selected="true"
                   />
               <progress-bar :value="chatRoundProgressValue" />
 
               <h3>Your color: {{ propsChatRound.playerColor }}</h3>
-              <h3>Your chosen topic: {{ propsChatRound.playerColor }}</h3>
+              <h3>Your chosen topic: {{ propsChatRound.playerChosenTopic }}</h3>
               <h3>Your role: {{ propsChatRound.playerRole }}</h3>
               <h3>Partner color: {{ propsChatRound.partnerColor }}</h3>
               <h3>Partner chosen topic: {{ propsChatRound.partnerChosenTopic }}</h3>
@@ -42,26 +37,26 @@
          </div>
          <div class="w-2/3">
             <message-panel
-               v-if="selectedUser"
-               :user="selectedUser"
+               v-if="user"
+               :user="user"
                @input="onMessage"
                />
          </div>
       </div>
 
       <div v-if="showInfoScreen">
-         <info-screen :info-text="infoText" @close="handleCloseInfoScreen()" />
+         <InfoScreen :infoText="infoText" @close="handleCloseInfoScreen()" />
       </div>
    </div>
 
-   <div v-else-if="showResultScreen">
+   <div v-else-if="currentScreen === 'ResultScreen'">
       <ResultScreen v-bind="propsResultScreen"></ResultScreen>
    </div>
 </div>
 
 </template>
 
-<script>
+<script lang="ts">
 import socket from "../socket";
 import User from "./User.vue";
 import MessagePanel from "./MessagePanel.vue";
@@ -72,7 +67,8 @@ import TopicScreen from './TopicScreen.vue'
 import VotingScreen from './VotingScreen.vue'
 import ResultScreen from './ResultScreen.vue'
 
-
+import type { ChooseTopicScreenData, VotingScreenData, ChatRoundData, ResultScreenData } from '../../server/game.ts'
+type ShowScreen = "Waiting" | "ChooseTopic" | "ChatScreen" | "VotingScreen" | "ResultScreen" | "ThankYou" 
 
 export default {
   name: "Chat",
@@ -86,154 +82,98 @@ export default {
     VotingScreen,
     ResultScreen,
   },
-  data() {
+  data(): {
+    user: any,
+    currentScreen: ShowScreen,
+
+    // todo: solution for the following:
+    // screens still work if undefined they just wont show data
+    // data will come later by means of socket.io
+    // either initialze them, or and handle undefined or null in the components themselves
+
+    propsChooseTopicScreen: ChooseTopicScreenData | undefined,
+    propsVotingScreen: VotingScreenData | undefined,
+    propsChatRound: ChatRoundData | undefined,
+    propsResultScreen: ResultScreenData | undefined,
+
+    showQuitConfirmation: boolean,
+    showInfoScreen: boolean,
+
+    chatRoundProgressValue: number,
+    infoText: string,
+  } {
     return {
-      selectedUser: null,
-      users: [],
+      user: {},
 
-      // TODO CHANGE TO TYPESCRIPT
-
-      // These are controled using a method called showScreen()
-      showWaiting: true,
-      showChooseTopic: false,
-      showChatScreen: false,
-      showVotingScreen: false,
-      showResultScreen: false,
-      showThankYou: false,
+      // currentScreen is controlled by showScreen() method
+      currentScreen: "Waiting",
 
       showQuitConfirmation: false,
       showInfoScreen: false,
 
-      propsChooseTopicScreen: null,
-      propsVotingScreen: null,
-      propsChatRound: null,
-      propsResultScreen: null,
+      propsChooseTopicScreen: undefined,
+      propsVotingScreen: undefined,
+      propsChatRound: undefined,
+      propsResultScreen: undefined,
 
       // progress bar data
       chatRoundProgressValue: 0,
+
+      infoText: "",
     }
   },
   methods: {
-    onMessage(content) {
-      if (this.selectedUser) {
-        socket.emit("private message", {
-          content,
-          to: this.selectedUser.userId,
-        });
-        this.selectedUser.messages.push({
-          content,
-          fromSelf: true,
-        });
-      }
+    onMessage(content: any) {
+      socket.emit("private message", {
+        content,
+        to: this.user.userId,
+      });
+      this.user.messages.push({
+        content,
+        fromSelf: true,
+      });
     },
 
     // These screens are controlled using flags
-    showScreen(inputFlag) {
-        this.showWaiting = inputFlag === 'showWaiting'
-        this.showChooseTopic = inputFlag === 'showChooseTopic'
-        this.showChatScreen = inputFlag === 'showChatScreen'
-        this.showVotingScreen = inputFlag === 'showVotingScreen'
-        this.showResultScreen = inputFlag === 'showResultScreen'
-        this.showThankYou = inputFlag === 'showThankYou'
+    showScreen(screenToShow: ShowScreen) {
+      this.currentScreen = screenToShow
     },
 
     handleCloseInfoScreen() {
       this.showInfoScreen = false
     },
 
-    setActiveUser(user) {
-      if (user.self === false) {
-        this.selectedUser = user;
-        user.hasNewMessages = false;
-      }
-    },
-
   },
   created() {
-    socket.on("connect", () => {
-      this.users.forEach((user) => {
-        if (user.self) {
-          user.connected = true;
-        }
-      });
-    });
-
-    socket.on("disconnect", () => {
-      this.users.forEach((user) => {
-        if (user.self) {
-          user.connected = false;
-        }
-      });
-    });
-
-    const initReactiveProperties = (user) => {
-      user.hasNewMessages = false;
-    };
 
     // USER CONNECTION EVENTS LISTENERS
-    socket.on("game state users", (users) => {
-      this.showScreen("showChatScreen")
-      this.users = []
-
-      users.forEach((user) => {
-        user.messages.forEach((message) => {
-          message.fromSelf = message.fromUserId === socket.userId;
-        });
-        for (let i = 0; i < this.users.length; i++) {
-          const existingUser = this.users[i];
-          if (existingUser.userId === user.userId) {
-            existingUser.connected = user.connected;
-            existingUser.messages = user.messages;
-            return;
-          }
-        }
-        user.self = user.userId === socket.userId;
-        initReactiveProperties(user);
-        this.setActiveUser(user)
-        this.users.push(user);
+    socket.on("game state users", (user) => {
+      this.showScreen("ChatScreen")
+      user.messages.forEach((message) => {
+        message.fromSelf = message.fromUserId === socket.userId;
       });
-      // put the current user first, and sort by username
-      this.users.sort((a, b) => {
-        if (a.self) return -1;
-        if (b.self) return 1;
-        if (a.username < b.username) return -1;
-        return a.username > b.username ? 1 : 0;
-      });
-    });
+      this.user = user
+    })
 
     socket.on("game state partner connected", (partnerId) => {
-      for (let i = 0; i < this.users.length; i++) {
-        const existingUser = this.users[i];
-        if (existingUser.userId === partnerId) {
-          existingUser.connected = true;
-        }
+      if (this.user.userId === partnerId) {
+        this.user.connected = true;
       }
     });
 
     socket.on("user disconnected", (id) => {
-      for (let i = 0; i < this.users.length; i++) {
-        const user = this.users[i];
-        if (user.userId === id) {
-          user.connected = false;
-          break;
-        }
+      if (this.user.userId === id) {
+        this.user.connected = false;
       }
     });
 
     socket.on("private message", ({ content, fromUserId, toUserId }) => {
-      for (let i = 0; i < this.users.length; i++) {
-        const user = this.users[i];
-        const fromSelf = socket.userId === fromUserId;
-        if (user.userId === (fromSelf ? toUserId : fromUserId)) {
-          user.messages.push({
-            content,
-            fromSelf,
-          });
-          if (user !== this.selectedUser) {
-            user.hasNewMessages = true;
-          }
-          break;
-        }
+      const fromSelf = socket.userId === fromUserId;
+      if (this.user.userId === (fromSelf ? toUserId : fromUserId)) {
+        this.user.messages.push({
+          content,
+          fromSelf,
+        });
       }
     });
 
@@ -247,17 +187,17 @@ export default {
     })
 
     socket.on("game state show voting screen", (data) => {
-      this.showScreen("showVotingScreen")
+      this.showScreen("VotingScreen")
       this.propsVotingScreen = data
     })
 
     socket.on("game state choose topic", (data) => {
-      this.showScreen("showChooseTopic")
+      this.showScreen("ChooseTopic")
       this.propsChooseTopicScreen = data
     })
 
     socket.on("game state result screen", (data) => {
-      this.showScreen("showResultScreen")
+      this.showScreen("ResultScreen")
       this.propsResultScreen = data
     })
 

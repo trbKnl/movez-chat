@@ -20,7 +20,6 @@
 </template>
 
 <script>
-import socket from "../socket";
 import ProgressBar from "./ProgressBar.vue";
 
 export default {
