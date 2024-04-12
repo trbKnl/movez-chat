@@ -45,10 +45,15 @@ export default {
         
         if (currentProgress >= 100) {
           clearInterval(interval);
-          this.$emit('close');
+          this.closeInfoScreen()
         }
       }, increment);
     },
+
+    closeInfoScreen() {
+      this.$emit('close');
+    },
+
   },
   created() {
      this.startProgressBarTimer(this.progressBarDuration);

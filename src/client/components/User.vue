@@ -1,8 +1,5 @@
 <template>
-  <div class="user rounded-lg" 
-       @click="onClick" 
-       :class="{'bg-gray-100': selected}"
-  >
+  <div class="user rounded-lg bg-gray-100">
     <div class="description">
       <div class="name">
         {{ user.username }}
@@ -11,7 +8,6 @@
         <status-icon :connected="user.connected" />{{ status }}
       </div>
     </div>
-    <div v-if="user.hasNewMessages" class="new-messages">!</div>
   </div>
 </template>
 
@@ -21,15 +17,11 @@ import StatusIcon from "./StatusIcon.vue";
 export default {
   name: "User",
   components: { StatusIcon },
-  emits: ["select"],
   props: {
     user: Object,
     selected: Boolean,
   },
   methods: {
-    onClick() {
-      this.$emit("select");
-    },
   },
   computed: {
     status() {

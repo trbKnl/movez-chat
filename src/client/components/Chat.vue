@@ -20,18 +20,15 @@
                <div class="flex items-center justify-between p-4">
                   <h2 class="font-semibold">Currently Online</h2>
                </div>
-               <user
-                  :key="user.userId"
-                  :user="user"
-                  :selected="true"
-                  />
+               <user :user="user" :selected="true" />
               <progress-bar :value="chatRoundProgressValue" />
-
-              <h3>Your color: {{ propsChatRound.playerColor }}</h3>
-              <h3>Your chosen topic: {{ propsChatRound.playerChosenTopic }}</h3>
-              <h3>Your role: {{ propsChatRound.playerRole }}</h3>
-              <h3>Partner color: {{ propsChatRound.partnerColor }}</h3>
-              <h3>Partner chosen topic: {{ propsChatRound.partnerChosenTopic }}</h3>
+              <div v-if="propsChatRound !== undefined">
+                <h3>Your color: {{ propsChatRound.playerColor }}</h3>
+                <h3>Your chosen topic: {{ propsChatRound.playerChosenTopic }}</h3>
+                <h3>Your role: {{ propsChatRound.playerRole }}</h3>
+                <h3>Partner color: {{ propsChatRound.partnerColor }}</h3>
+                <h3>Partner chosen topic: {{ propsChatRound.partnerChosenTopic }}</h3>
+              </div>
 
             </div>
          </div>
@@ -57,6 +54,10 @@
 </template>
 
 <script lang="ts">
+// CODE IS NOT COMPLETELY IN TYPESCRIPT
+// only this component is partly written in typescript yet
+// other components aren't
+
 import socket from "../socket";
 import User from "./User.vue";
 import MessagePanel from "./MessagePanel.vue";
@@ -85,18 +86,11 @@ export default {
   data(): {
     user: any,
     currentScreen: ShowScreen,
-
-    // todo: solution for the following:
-    // screens still work if undefined they just wont show data
-    // data will come later by means of socket.io
-    // either initialze them, or and handle undefined or null in the components themselves
-
     propsChooseTopicScreen: ChooseTopicScreenData | undefined,
     propsVotingScreen: VotingScreenData | undefined,
     propsChatRound: ChatRoundData | undefined,
     propsResultScreen: ResultScreenData | undefined,
 
-    showQuitConfirmation: boolean,
     showInfoScreen: boolean,
 
     chatRoundProgressValue: number,
@@ -104,11 +98,8 @@ export default {
   } {
     return {
       user: {},
+      currentScreen: "Waiting", // currentScreen is controlled by showScreen() method
 
-      // currentScreen is controlled by showScreen() method
-      currentScreen: "Waiting",
-
-      showQuitConfirmation: false,
       showInfoScreen: false,
 
       propsChooseTopicScreen: undefined,
@@ -116,8 +107,7 @@ export default {
       propsChatRound: undefined,
       propsResultScreen: undefined,
 
-      // progress bar data
-      chatRoundProgressValue: 0,
+      chatRoundProgressValue: 0, // progress bar data
 
       infoText: "",
     }
@@ -143,13 +133,13 @@ export default {
       this.showInfoScreen = false
     },
 
+
   },
   created() {
 
-    // USER CONNECTION EVENTS LISTENERS
     socket.on("game state users", (user) => {
       this.showScreen("ChatScreen")
-      user.messages.forEach((message) => {
+      user.messages.forEach((message: any) => {
         message.fromSelf = message.fromUserId === socket.userId;
       });
       this.user = user
@@ -205,15 +195,6 @@ export default {
       this.propsChatRound = data
     })
 
-  },
-  destroyed() {
-    socket.off("connect");
-    socket.off("disconnect");
-    socket.off("users");
-    socket.off("user connected");
-    socket.off("user disconnected");
-    socket.off("private message");
-    socket.off("update game");
   },
 };
 </script>
