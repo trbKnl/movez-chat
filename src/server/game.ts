@@ -152,8 +152,6 @@ export class Game {
         await sleep(20)
       case "results":
         await this.sendResultScreen(io, playerDataStore)
-        await sleep(30) // CONTINUE HERE CCCCONTINUE HERE ONTINUE HERE ONTINUE HERE ONTINUE HERE
-
         break;
     }
   }
