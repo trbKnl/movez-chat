@@ -1,14 +1,7 @@
 <template>
-  <div class="user rounded-lg bg-gray-100">
-    <div class="description">
-      <div class="name">
-        {{ user.username }}
-      </div>
-      <div class="status">
-        <status-icon :connected="user.connected" />{{ status }}
-      </div>
+    <div class="status">
+      <status-icon :connected="user.connected" />{{ status }}
     </div>
-  </div>
 </template>
 
 <script>
@@ -33,14 +26,6 @@ export default {
 
 <style scoped>
 
- .user {
-   padding: 10px;
- }
- 
- .description {
-   display: inline-block;
- }
- 
  .status {
    color: #92959e;
  }

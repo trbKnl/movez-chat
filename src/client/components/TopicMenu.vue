@@ -1,7 +1,7 @@
 <template>
   <div class="relative inline-block" @click="toggleMenu">
     <button type="button" class="inline-flex items-center justify-between px-2 py-1 font-medium text-gray-700 transition-all duration-500 rounded-md focus:outline-none focus:text-brand-900 sm:focus:shadow-outline">
-      <span class="flex-shrink-0">{{ buttonLabel }} </span>
+      <span class="flex-shrink-0">{{ label }} </span>
       <svg fill="currentColor" viewBox="0 0 20 20" class="flex-shrink-0 w-5 h-5 ml-1">
         <path :class="{ 'rotate-180': isMenuOpen }" class="transition duration-300 ease-in-out origin-center transform" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
       </svg>
@@ -22,15 +22,22 @@
 </template>
 
 <script>
+
+
+
 export default {
+  props: [
+    "menuLabel",
+    "menuLabelChosen",
+    "menuOptions"
+  ],
   data() {
     return {
       isMenuOpen: false,
-      buttonLabel: "Choose your topic",
       selectedOption: "",
+      label: this.menuLabel,
     };
   },
-  props: ["menuOptions"],
   emits: ["chosenOption"],
   methods: {
     toggleMenu() {
@@ -40,7 +47,7 @@ export default {
     selectOption(option) {
       this.selectedOption = option
       this.$emit('chosenOption', option)
-      this.buttonLabel = `Your chosen topic: ${this.selectedOption}`
+      this.label = `${this.menuLabelChosen}${this.selectedOption}`
     }
   }
 }

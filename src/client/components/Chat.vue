@@ -17,17 +17,34 @@
       <div class="flex">
          <div class="w-1/3 bg-gray-300">
             <div class="p-3">
-               <div class="flex items-center justify-between p-4">
-                  <h2 class="font-semibold">Currently Online</h2>
-               </div>
-               <user :user="user" :selected="true" />
-              <progress-bar :value="chatRoundProgressValue" />
+              <div class="flex items-center justify-between p-4">
+                 <h2 class="text-xl font-bold">Chat Room</h2>
+              </div>
+
               <div v-if="propsChatRound !== undefined">
-                <h3>Your color: {{ propsChatRound.playerColor }}</h3>
-                <h3>Your chosen topic: {{ propsChatRound.playerChosenTopic }}</h3>
-                <h3>Your role: {{ propsChatRound.playerRole }}</h3>
-                <h3>Partner color: {{ propsChatRound.partnerColor }}</h3>
-                <h3>Partner chosen topic: {{ propsChatRound.partnerChosenTopic }}</h3>
+
+                <!-- You -->
+                <div class="bg-gray-100 p-4 rounded-md m-1">
+                  <div class="flex flex-wrap">
+                  <div :class="'w-6 m-1 h-6 rounded-full ' + playerColorMapping[propsChatRound.playerColor]"></div>
+                    <h3 class="text-lg font-semibold">You</h3>
+                  </div>
+                  <p>Topic: {{ propsChatRound.playerChosenTopic }} </p>
+                  <p>Talks about: {{ propsChatRound.playerChosenTalksAbout }}</p>
+                </div>
+                
+                <!-- Partner -->
+                <div class="bg-gray-100 p-4 rounded-md m-1">
+                  <div class="flex flex-wrap">
+                    <div :class="'w-6 m-1 h-6 rounded-full ' + playerColorMapping[propsChatRound.partnerColor]"></div>
+                    <h3 class="text-lg font-semibold">Partner</h3>
+                    <user class="ml-3" :user="user" :selected="true" />
+                  </div>
+                  <p>Topic: {{ propsChatRound.partnerChosenTopic }}</p>
+                  <p>Talks about: {{ propsChatRound.partnerChosenTalksAbout }}</p>
+                </div>
+
+                <progress-bar class="m-1" :value="chatRoundProgressValue" />
               </div>
 
             </div>
@@ -68,7 +85,9 @@ import TopicScreen from './TopicScreen.vue'
 import VotingScreen from './VotingScreen.vue'
 import ResultScreen from './ResultScreen.vue'
 
-import type { ChooseTopicScreenData, VotingScreenData, ChatRoundData, ResultScreenData } from '../../server/game.ts'
+import { PlayerColorMapping } from '../config'
+
+import type { ChooseTopicScreenData, VotingScreenData, ChatRoundData, ResultScreenData, PlayerColor } from '../../server/game.ts'
 type ShowScreen = "Waiting" | "ChooseTopic" | "ChatScreen" | "VotingScreen" | "ResultScreen" | "ThankYou" 
 
 export default {
@@ -90,9 +109,8 @@ export default {
     propsVotingScreen: VotingScreenData | undefined,
     propsChatRound: ChatRoundData | undefined,
     propsResultScreen: ResultScreenData | undefined,
-
     showInfoScreen: boolean,
-
+    playerColorMapping: Record<PlayerColor, string>
     chatRoundProgressValue: number,
     infoText: string,
   } {
@@ -107,8 +125,8 @@ export default {
       propsChatRound: undefined,
       propsResultScreen: undefined,
 
+      playerColorMapping: PlayerColorMapping,
       chatRoundProgressValue: 0, // progress bar data
-
       infoText: "",
     }
   },

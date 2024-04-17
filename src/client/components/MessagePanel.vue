@@ -16,11 +16,7 @@
           <li
             v-for="(message, index) in user.messages"
             :key="index"
-            :class="{
-              'bg-purple-800 self-start ml-5': !message.fromSelf,
-              'bg-purple-400 self-end mr-5': message.fromSelf,
-              'text-white py-2 px-3 rounded-lg max-w-max max-h-max p-10 m-1 shadow-lg': true
-            }"
+            :class="getMessageClass(message, this.user)"
           >
            <!-- Removed the sender's username display -->
             <div v-if="displaySender(message, index)" class="font-semibold">
@@ -51,14 +47,11 @@
 
 
 <script>
-import StatusIcon from "./StatusIcon.vue";
+import { PlayerColorMapping } from '../config.ts'
 
 export default {
   name: "MessagePanel",
   emits: ["input"],
-  components: {
-    StatusIcon,
-  },
   props: {
     user: Object,
   },
@@ -95,6 +88,16 @@ export default {
         container.scrollTop = container.scrollHeight;
       });
     },
+
+    getMessageClass(message, user) {
+      const bgColorClass = message.fromSelf ? `${PlayerColorMapping[user.playerColor]}` : `${PlayerColorMapping[user.partnerColor]}`;
+      return {
+        [bgColorClass]: true,
+        'bg-purple-800 self-start ml-5': !message.fromSelf,
+        'self-end mr-5': message.fromSelf,
+        'text-white py-2 px-3 rounded-lg max-w-max max-h-max p-10 m-1 shadow-lg': true
+      };
+    }
   },
 
   computed: {

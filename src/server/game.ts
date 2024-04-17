@@ -24,6 +24,15 @@ export const GameStateSchema = z.union([
 
 type GameState = z.infer<typeof GameStateSchema>;
 
+export const PlayerColorSchema = z.union([
+  z.literal('Red'),
+  z.literal('Yellow'),
+  z.literal('Green'),
+  z.literal('Blue'),
+]);
+
+export type PlayerColor = z.infer<typeof PlayerColorSchema>;
+
 export const GameDataSchema = z.object({
   gameId: z.string(),
   players: z.array(PlayerSchema),
@@ -35,8 +44,8 @@ export const GameDataSchema = z.object({
 export type GameData = z.infer<typeof GameDataSchema>
 
 export const ChooseTopicScreenDataSchema = z.object({
-  topicQuestion: z.string(),
-  topicOptions: z.array(z.string()),
+  //topicQuestion: z.string(),
+  //topicOptions: z.array(z.string()),
   playerRole: z.string(),
   playerColor: z.string(),
 })
@@ -61,21 +70,20 @@ export const ResultScreenDataSchema = z.object({
 
 export type ResultScreenData = z.infer<typeof ResultScreenDataSchema>
 
+
 export const ChatRoundDataSchema = z.object({
-  playerRole: z.string(),
-  playerColor: z.string(),
-  partnerColor: z.string(),
+  playerColor: PlayerColorSchema,
   playerChosenTopic: z.string(),
+  playerChosenTalksAbout: z.string(),
+  partnerColor: PlayerColorSchema,
   partnerChosenTopic: z.string(),
+  partnerChosenTalksAbout: z.string(),
 })
 
 export type ChatRoundData = z.infer<typeof ChatRoundDataSchema>
 
 
 // GAME OBJECT
-
-// TODO: CREATE method that keeps track of the game state 
-// and whenever the client requests state (upon reconnect) current state can be sent
 
 export class Game {
     public gameId: string 
@@ -85,12 +93,11 @@ export class Game {
     public gameState: GameState
 
     private pairingsPerRound: number[][][]
-    private duration: number
-    private topicQuestion: string
-    private topicOptions: string[]
+    //private topicQuestion: string
+    //private topicOptions: string[]
     private imposterLabel: string
     private playerLabel: string
-    private playerColors: string[]
+    private playerColors: PlayerColor[]
 
     constructor(
       gameId: string,
@@ -111,9 +118,8 @@ export class Game {
     this.gameState = gameState
 
     this.pairingsPerRound = [[[0,1], [2,3]], [[0,2], [1,3]], [[0,3], [1,2]]]
-    this.duration = 10  // in seconds
-    this.topicQuestion = "Who is your favorite singer?" 
-    this.topicOptions = ["Michael Jackson", "Birtnet Psiers", "George michel", "Arana Grando"]
+    //this.topicQuestion = "Who is your favorite singer?" 
+    //this.topicOptions = ["Michael Jackson", "Birtnet Psiers", "George michel", "Arana Grando"]
     this.imposterLabel = "Imposter"
     this.playerLabel = "Player"
     this.playerColors = ["Yellow", "Green", "Blue", "Red"]
@@ -137,19 +143,19 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io);
-        await sleep(30)
+        await this.sleepAndUpdateProgress(io, 60) // 60s
         break;
       case "chatting":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io)
+          await this.sleepAndUpdateProgress(io, 60*5) // 5*60s
           this.nextRound()
           this.save(gameStore)
         }
         break;
       case "voting":
         this.showVotingScreenForAll(io)
-        await sleep(20)
+        await this.sleepAndUpdateProgress(io, 30) // 30s
       case "results":
         await this.sendResultScreen(io, playerDataStore)
         break;
@@ -180,8 +186,8 @@ export class Game {
   
   showChooseTopicScreen(io: SocketIOServer, player: Player) {
       const chooseTopicScreenData: ChooseTopicScreenData = {
-          topicQuestion: this.topicQuestion, 
-          topicOptions: this.topicOptions,
+          //topicQuestion: this.topicQuestion, 
+          //topicOptions: this.topicOptions,
           playerRole: this.getPlayerRole(player),
           playerColor: this.getPlayerColor(player),
       }
@@ -221,13 +227,15 @@ export class Game {
 
         const partner = this.players[partnerIndex]
         const messages = await getMessages(messageStore, player.userId, partner.userId)
-        const user = {
+        const user = { // For now this is still hacky, change to a custom type
           userId: partner.userId,
-          username: partner.userId,
+          username: "Partner",
+          partnerColor: this.getPlayerColor(partner),
+          playerColor: this.getPlayerColor(player),
           connected: true,
           messages: messages
         }
-        this.showInfoScreen(io, player, `You are now going to talk to ${partner.userId}`)
+        this.showInfoScreen(io, player, `You are now going to talk to the ${this.getPlayerColor(partner)} player`)
         io.to(player.userId).emit("game state users", user)
         io.to(partner.userId).emit("game state partner connected", player.userId)
         this.sendChatRoundInfo(io, playerDataStore, player, partner)
@@ -244,13 +252,16 @@ export class Game {
 
   async sendChatRoundInfo(io: SocketIOServer, playerDataStore: PlayerDataStore, user: Player, partner: Player) {
     const yourChosenTopic = await playerDataStore.getPlayerData(this.gameId, user, "topic")
+    const yourChosenTalksAbout = await playerDataStore.getPlayerData(this.gameId, user, "talks about")
     const partnerChosenTopic = await playerDataStore.getPlayerData(this.gameId, partner, "topic")
+    const partnerChosenTalksAbout = await playerDataStore.getPlayerData(this.gameId, partner, "talks about")
     const chatRoundData: ChatRoundData = {
-      playerRole: this.getPlayerRole(user),
       playerColor: this.getPlayerColor(user),
-      partnerColor: this.getPlayerColor(partner),
       playerChosenTopic: yourChosenTopic,
+      playerChosenTalksAbout: yourChosenTalksAbout,
+      partnerColor: this.getPlayerColor(partner),
       partnerChosenTopic: partnerChosenTopic,
+      partnerChosenTalksAbout: partnerChosenTalksAbout,
     }
     io.to(user.userId).emit("game state chat round info", chatRoundData)
   }
@@ -296,7 +307,7 @@ export class Game {
     return this.players[index]
   }
 
-  getPlayerColor(player: Player): string {
+  getPlayerColor(player: Player): PlayerColor {
     const index = this.findPlayerIndex(player)
     return this.playerColors[index]
   }
@@ -326,9 +337,12 @@ export class Game {
     })
   }
 
-  async sleepAndUpdateProgress(io: SocketIOServer) {
+  async sleepAndUpdateProgress(io: SocketIOServer, secondsToSleep: number) {
+    this.players.forEach((player) => {
+      io.to(player.userId).emit("game state progress update", 0)
+    })
     const updateRounds = 10
-    const secondsArr = divideIntegerIntoParts(this.duration, updateRounds) // array of ms
+    const secondsArr = divideIntegerIntoParts(secondsToSleep, updateRounds) // array of ms
     for (let i = 0; i < secondsArr.length; i++) {
       const seconds = secondsArr[i]
       await sleep(seconds) 
