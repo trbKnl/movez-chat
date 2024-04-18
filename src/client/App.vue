@@ -1,56 +1,56 @@
 <template>
   <div id="app">
-    <chat />
+
+    <div v-if="showWelcomeScreen">
+      <Welcome @start-chat="startChat"/>
+    </div>
+
+    <div v-else>
+      <chat />
+    </div>
+
   </div>
 </template>
 
 <script>
 import Chat from "./components/Chat.vue";
+import Welcome from "./components/Welcome.vue";
 import socket from "./socket";
 
 export default {
   name: "App",
   components: {
     Chat,
+    Welcome,
   },
   data() {
     return {
-      sessionsExists: false,
+      showWelcomeScreen: true,
     };
   },
-  created() {
-    // Check if session exists in local storage
-    const sessionId = localStorage.getItem("sessionId");
-    if (sessionId) {
-      this.sessionsExists = true;
+  methods: {
+    startChat() {
+      const sessionId = window.location.pathname.split('/').pop();
       socket.auth = { sessionId };
       socket.connect();
 
-    // If a sessions does not exist request one from the server
-    } else {
-      this.sessionsExists = true;
-      //socket.auth = { username };
-      socket.connect();
+      this.showWelcomeScreen = false
+      localStorage.setItem("WelcomeScreenSeen", "true")
+    }
+  },
+
+  created() {
+    const hasSeenWelsomeScreen = localStorage.getItem("WelcomeScreenSeen");
+    if (hasSeenWelsomeScreen === "true") {
+      this.startChat()
     }
 
-    // Receive sessionId from server and storge in local storage
-    socket.on("session", ({ sessionId, userId, roomId }) => {
+    socket.on("session", ({ sessionId, userId }) => {
       socket.auth = { sessionId };
-      localStorage.setItem("sessionId", sessionId);
       socket.userId = userId;
-      socket.roomId = roomId;
-    });
-
-    socket.on("connect_error", (err) => {
-      if (err.message === "invalid username") {
-        this.sessionsExists = false;
-      }
-    });
-  },
-  destroyed() {
-    socket.off("connect_error");
-  },
-};
+    })
+  }
+}
 </script>
 
 <style>

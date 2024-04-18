@@ -93,7 +93,7 @@ export default {
       const bgColorClass = message.fromSelf ? `${PlayerColorMapping[user.playerColor]}` : `${PlayerColorMapping[user.partnerColor]}`;
       return {
         [bgColorClass]: true,
-        'bg-purple-800 self-start ml-5': !message.fromSelf,
+        'self-start ml-5': !message.fromSelf,
         'self-end mr-5': message.fromSelf,
         'text-white py-2 px-3 rounded-lg max-w-max max-h-max p-10 m-1 shadow-lg': true
       };

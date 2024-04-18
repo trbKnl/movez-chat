@@ -90,9 +90,7 @@ io.engine.use(sessionMiddleware)
 
 // EXPRESS ROUTES
 
-app.get("/chat/:sessionId", (req, res) => {
-  const sessionId = req.params.sessionId
-  req.session.sessionId = sessionId
+app.get("/chat/:sessionId", (_req, res) => {
   res.sendFile(resolve(__dirname + chatAppUrl))
 })
 
@@ -108,10 +106,12 @@ const playerDataStore = new PlayerDataStore(redisClient)
 // SOCKET IO SERVER
 
 io.use(async (socket, next) => {
-  let sessionId = socket.request.session.sessionId 
+
+  // sessionId is extracted from the url in the frontend
+  let sessionId = socket.handshake.auth.sessionId
 
   console.log("=====")
-  console.log("from url")
+  console.log("from socket auth")
   console.log(sessionId)
   console.log("=====")
 
