@@ -28,6 +28,7 @@
                   <div class="flex flex-wrap">
                   <div :class="'w-6 m-1 h-6 rounded-full ' + playerColorMapping[propsChatRound.playerColor]"></div>
                     <h3 class="text-lg font-semibold">You</h3>
+                    <user class="ml-3" :connected="playerConnected" />
                   </div>
                   <p>Topic: {{ propsChatRound.playerChosenTopic }} </p>
                   <p>Talks about: {{ propsChatRound.playerChosenTalksAbout }}</p>
@@ -38,7 +39,7 @@
                   <div class="flex flex-wrap">
                     <div :class="'w-6 m-1 h-6 rounded-full ' + playerColorMapping[propsChatRound.partnerColor]"></div>
                     <h3 class="text-lg font-semibold">Partner</h3>
-                    <user class="ml-3" :user="user" :selected="true" />
+                    <user class="ml-3" :connected="user.connected" />
                   </div>
                   <p>Topic: {{ propsChatRound.partnerChosenTopic }}</p>
                   <p>Talks about: {{ propsChatRound.partnerChosenTalksAbout }}</p>
@@ -72,8 +73,6 @@
 
 <script lang="ts">
 // CODE IS NOT COMPLETELY IN TYPESCRIPT
-// only this component is partly written in typescript yet
-// other components aren't
 
 import socket from "../socket";
 import User from "./User.vue";
@@ -113,6 +112,7 @@ export default {
     playerColorMapping: Record<PlayerColor, string>
     chatRoundProgressValue: number,
     infoText: string,
+    playerConnected: boolean,
   } {
     return {
       user: {},
@@ -128,6 +128,7 @@ export default {
       playerColorMapping: PlayerColorMapping,
       chatRoundProgressValue: 0, // progress bar data
       infoText: "",
+      playerConnected: true,
     }
   },
   methods: {
@@ -142,7 +143,6 @@ export default {
       });
     },
 
-    // These screens are controlled using flags
     showScreen(screenToShow: ShowScreen) {
       this.currentScreen = screenToShow
     },
@@ -151,11 +151,11 @@ export default {
       this.showInfoScreen = false
     },
 
-
   },
   created() {
 
     socket.on("game state users", (user) => {
+      this.playerConnected = true
       this.showScreen("ChatScreen")
       user.messages.forEach((message: any) => {
         message.fromSelf = message.fromUserId === socket.userId;
@@ -213,6 +213,9 @@ export default {
       this.propsChatRound = data
     })
 
+    socket.on("disconnect", () => {
+      this.playerConnected = false
+    })
   },
 };
 </script>

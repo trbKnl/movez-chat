@@ -210,7 +210,6 @@ io.on("connection", async (socket) => {
   })
 
   // socket on game logic
-  //
   socket.on("game state set topic", async ({chosenTopic, chosenTalksAbout}) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
     if (userSessionData !== undefined) {
@@ -243,8 +242,8 @@ emptyQueue(waitingQueue)
 emptyQueue(gameQueue)
 
 
+const nPlayers = 4 
 let players: Player[] = []
-const nPlayers = 4 // Only 4 really makes sense
 
 function removeFromPlayers(userId: string) {
   players.forEach((el, idx, arr) => {
@@ -273,9 +272,6 @@ const waitingQueueWorker = new Worker('waitingQueue', async (job) => {
     connection: redisClient
 });
 
-
-// GAMEQUEUE
-
 const gameQueueWorker = new Worker('gameQueue', async (job) => {
   await gameLoop(job.data.players)
   }, { 
@@ -290,21 +286,12 @@ const gameQueueWorker = new Worker('gameQueue', async (job) => {
 async function gameLoop(players: Player[]) {
   try { // needed for development else you wont see any error messages
 
-    console.log("==========================")
-    console.log("these are the players")
-    console.log(players)
-    console.log("==========================")
-
     // Create a game
     let gameId = randomId()
     let game  = new Game(gameId, players)
 
-    // Register game with players
     game.registerGame(sessionStore)
-
     await game.play(io, gameStore, messageStore, playerDataStore)
-
-    // unregister the game
     game.unregisterGame(sessionStore)
 
   } catch (error) {

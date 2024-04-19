@@ -1,6 +1,6 @@
 <template>
     <div class="status">
-      <status-icon :connected="user.connected" />{{ status }}
+      <status-icon :connected="connected" />{{ status }}
     </div>
 </template>
 
@@ -11,14 +11,13 @@ export default {
   name: "User",
   components: { StatusIcon },
   props: {
-    user: Object,
-    selected: Boolean,
+    connected: Boolean,
   },
   methods: {
   },
   computed: {
     status() {
-      return this.user.connected ? "online" : "offline";
+      return this.connected ? "online" : "offline";
     },
   },
 };
