@@ -148,7 +148,7 @@ export class Game {
       case "chatting":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io, 60*5) // 5*60s
+          await this.sleepAndUpdateProgress(io, 60*3) // 3*60s
           this.nextRound()
           this.save(gameStore)
         }

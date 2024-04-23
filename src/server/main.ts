@@ -214,8 +214,7 @@ io.on("connection", async (socket) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
     if (userSessionData !== undefined) {
       playerDataStore.setPlayerData(userSessionData.gameId, player, "topic", chosenTopic)
-      playerDataStore.setPlayerData(userSessionData.gameId, player, "talks about", chosenTopic)
-      console.log(`${chosenTopic} ${chosenTalksAbout}`)
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "talks about", chosenTalksAbout)
     }
   })
 
