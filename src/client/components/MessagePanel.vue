@@ -23,24 +23,39 @@
               {{ message.fromSelf ? "You" : user.username }}
             </div> 
 
-            <div>{{ message.content }}</div>
+            <div class="text-base tracking-normal">{{ message.content }}</div>
           </li>
         </ul>
       </div>
       </div>
     </div>
 
+            
     <!-- Bottom item with fixed height -->
-    <div class="h-25 bg-gray-100">
-      <form @submit.prevent="onSubmit" class="flex items-center justify-between bg-gray-100 p-4 rounded-lg" >
-        <textarea 
-          v-model="input"
-          placeholder="Your message..." 
-          class="flex-1 mr-2 py-2 px-4 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500 resize-none"
-          @keydown="handleKeydown"
-        />
-        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg focus:outline-none">Send</button>
-      </form>
+    <div class="relative w-300 h-200 m-5">
+        <div class="flex justify-between items-center bg-gray-100 rounded-lg border border-gray-300">
+
+          <VDropdown ref="dropdown">
+            <button class="m-5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M12 1a11 11 0 1 0 11 11A11.013 11.013 0 0 0 12 1zm0 20a9 9 0 1 1 9-9 9.011 9.011 0 0 1-9 9zm6-8a6 6 0 0 1-12 0 1 1 0 0 1 2 0 4 4 0 0 0 8 0 1 1 0 0 1 2 0zM8 10V9a1 1 0 0 1 2 0v1a1 1 0 0 1-2 0zm6 0V9a1 1 0 0 1 2 0v1a1 1 0 0 1-2 0z"/>
+              </svg>
+            </button>
+            <template #popper>
+                <VuemojiPicker @emojiClick="handleEmojiClick" />
+            </template>
+          </VDropdown>
+
+          <form @submit.prevent="onSubmit" class="mt-5 w-full" >
+          <textarea 
+            ref="inputBox"
+            v-model="input"
+            placeholder="Type a message" 
+            class="w-full h-full resize-none tracking-normal text-base focus:outline-none bg-gray-100"
+            @keydown="handleKeydown"
+          />
+        </form>
+        </div>
     </div>
   </div>
 </template>
@@ -48,6 +63,9 @@
 
 <script>
 import { PlayerColorMapping } from '../config.ts'
+import insertText from "insert-text-at-cursor"
+import { VuemojiPicker } from 'vuemoji-picker'
+
 
 export default {
   name: "MessagePanel",
@@ -60,12 +78,20 @@ export default {
       input: "",
     };
   },
+  components: {
+    VuemojiPicker
+  },
   methods: {
     onSubmit() {
       if (this.isValid) {
+         this.$refs.dropdown.hide();
         this.$emit("input", this.input);
         this.input = "";
       }
+    },
+
+    handleEmojiClick(e) {
+      insertText(this.$refs.inputBox, e.unicode)
     },
 
     handleKeydown(event) {
@@ -106,7 +132,13 @@ export default {
     },
   },
   mounted() {
+
     this.scrollToBottom();
+
+    this.$nextTick(() => {
+      this.$refs.inputBox.focus()
+    })
+
   },
   updated() {
     this.scrollToBottom();

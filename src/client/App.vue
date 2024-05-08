@@ -30,7 +30,7 @@ export default {
   },
   methods: {
     startChat() {
-      const sessionId = window.location.pathname.split('/').pop();
+      const sessionId = window.location.pathname.replace(/\/$/, '').split('/').pop();
       socket.auth = { sessionId };
       socket.connect();
 

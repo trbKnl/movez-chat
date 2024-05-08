@@ -9,9 +9,12 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@floating-ui/vue": "^1.0.6",
     "@msgpack/msgpack": "^3.0.0-beta2",
     "bullmq": "^5.4.6",
     "express": "^4.19.2",
+    "floating-vue": "^5.2.2",
+    "insert-text-at-cursor": "^0.3.0",
     "ioredis": "^5.3.2",
     "js-combinatorics": "^2.1.2",
     "lodash": "^4.17.21",
@@ -21,6 +24,8 @@
     "typescript": "^5.3.2",
     "vite-express": "*",
     "vue": "^3.3.8",
+    "vue3-emoji-picker": "^1.1.8",
+    "vuemoji-picker": "^0.2.1",
     "winston": "^3.13.0",
     "zod": "^3.22.4"
   },
