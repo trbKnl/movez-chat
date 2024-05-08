@@ -101,6 +101,47 @@ export default {
       }
     },
 
+    handleKeyAnywhere(event) {
+      // Check if the event occurred in the textarea or if it's a modifier key
+       // Check if the event occurred in the textarea or if it's a modifier key
+      if (event.target !== this.$refs.inputBox && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        // Prevent the default action to avoid scrolling the page
+        event.preventDefault();
+
+        // Get the textarea reference and focus it
+        const textarea = this.$refs.inputBox;
+        textarea.focus();
+
+        // Get the pressed key
+        const key = event.key;
+
+        // Check if Shift is pressed
+        const isShiftPressed = event.shiftKey;
+
+        // If Shift is pressed and the key is alphabetic, convert it to uppercase
+        if (isShiftPressed && /^[a-zA-Z]$/.test(key)) {
+          // Convert to uppercase
+          const upperKey = key.toUpperCase();
+
+          // Simulate typing by inserting the uppercase key into the textarea
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.slice(0, start) + upperKey + textarea.value.slice(end);
+
+          // Adjust the cursor position
+          textarea.selectionStart = start + 1;
+          textarea.selectionEnd = start + 1;
+        } else if (key !== "Shift") {
+          // For other keys, simulate typing as before
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value = textarea.value.slice(0, start) + key + textarea.value.slice(end);
+          textarea.selectionStart = start + 1;
+          textarea.selectionEnd = start + 1;
+        }
+      }
+    },
+
     displaySender(message, index) {
       return (
         index === 0 ||
@@ -138,6 +179,7 @@ export default {
     this.$nextTick(() => {
       this.$refs.inputBox.focus()
     })
+    document.addEventListener('keydown', this.handleKeyAnywhere);
 
   },
   updated() {
