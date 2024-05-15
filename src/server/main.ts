@@ -186,11 +186,8 @@ io.on("connection", async (socket) => {
     await waitingQueue.add("participant", player)
   }
 
-  // forward the private message to the right recipient
   socket.on("private message", ({ content, to }) => {
-    console.log(`TO ${to}`)
     to.forEach((recipient: string) => {
-      console.log(`RECEPIENT ${recipient}`)
       const result = MessageSchema.safeParse({content: content, fromUserId: player.userId, toUserId: recipient})
       if (result.success) {
         const message = result.data
@@ -201,7 +198,6 @@ io.on("connection", async (socket) => {
     })
   })
 
-  // notify users upon disconnection
   socket.on("disconnect", async () => {
     removeFromPlayers(player.userId)
     const matchingSockets = await io.in(player.userId).allSockets()

@@ -2,7 +2,7 @@
   <div class="bg-gray-100 p-4 rounded-md m-1">
     <div class="flex flex-wrap">
     <div :class="'w-6 m-1 h-6 rounded-full ' + playerColorMapping[playerData.color]"></div>
-      <h3 class="text-lg font-semibold">You</h3>
+      <h3 class="text-lg font-semibold">{{playerData.color}}</h3>
       <div class="status">
         <status-icon class="ml-3" :connected="playerData.connected" />{{ status }}
       </div>

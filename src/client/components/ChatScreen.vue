@@ -20,7 +20,7 @@
       <div class="w-2/3">
          <message-panel
            :players="playerDataArray"
-           :messages="messages"
+           :messages="messageData"
            @input="onMessage"
          />
       </div>
@@ -47,20 +47,36 @@ export default {
     MessagePanel,
     ProgressBar,
   },
-  props: [
-    "playerDataArray"
-  ],
+  props: {
+    playerDataArray: {
+      type: Array as () => PlayerData[],
+      required: true
+    },
+    messages: {
+      type: Array as () => Message[],
+      default: []
+    },
+  },
+  watch: {
+    playerDataArray() {
+      this.messageData = []
+      this.messages.forEach((message: Message) => {
+        const fromSelf = socket.userId === message.fromUserId
+        this.messageData.push({...message, fromSelf})
+      })
+    }
+  },
   data(): {
     chatRoundProgressValue: number,
     playerColorMapping: Record<PlayerColor, string>
     playerConnected: boolean,
-    messages: Message[]
+    messageData: Message[],
   } {
     return {
       playerColorMapping: PlayerColorMapping,
       chatRoundProgressValue: 0, // progress bar data
       playerConnected: true,
-      messages: []
+      messageData: [],
     }
   },
   methods: {
@@ -68,7 +84,7 @@ export default {
       const partners = this.collectPartners()
       const partnerUserIds = partners.map((player: PlayerData) => player.userId)
       socket.emit("private message", { content, to: partnerUserIds, })
-      this.messages.push({ content, fromUserId: socket.userId, toUserId: "", fromSelf: true, })
+      this.messageData.push({ content, fromUserId: socket.userId, toUserId: "", fromSelf: true, })
     },
 
     collectPartners() {
@@ -78,13 +94,9 @@ export default {
   },
   created() {
     // Load the messages upon loading the component
-    this.playerDataArray.forEach((player: PlayerData) => {
-      if (player.messages !== undefined) {
-        player.messages.forEach((message) => {
-          const fromSelf = socket.userId === message.fromUserId
-          this.messages.push({...message, fromSelf})
-        })
-      }
+    this.messages.forEach((message: Message) => {
+      const fromSelf = socket.userId === message.fromUserId
+      this.messageData.push({...message, fromSelf})
     })
 
     socket.on("game state partner connected", (partnerId) => {
@@ -105,7 +117,7 @@ export default {
 
     socket.on("private message", ({ content, fromUserId, toUserId }) => {
       const fromSelf = socket.userId === fromUserId
-      this.messages.push({ content, fromUserId, toUserId, fromSelf, }) 
+      this.messageData.push({ content, fromUserId, toUserId, fromSelf, }) 
     });
 
     socket.on("game state progress update", (progress) => {

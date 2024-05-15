@@ -6,6 +6,7 @@ import { Redis } from 'ioredis'
 import { z } from 'zod'
 
 import { MessageSchema } from './messageStore'
+import { get } from "https"
 
 // PLAYER CLASS
 
@@ -18,7 +19,8 @@ export type Player = z.infer<typeof PlayerSchema>
 
 export const GameStateSchema = z.union([
   z.literal('choose topic'),
-  z.literal('chatting'),
+  z.literal('chat'),
+  z.literal('group chat'),
   z.literal('voting'),
   z.literal('results'),
   z.literal('end'),
@@ -80,13 +82,13 @@ export const PlayerDataSchema = z.object({
   username: z.string(),
   connected: z.boolean(),
   isCurrentPlayer: z.boolean(),
-  messages: z.array(MessageSchema).optional(),
 })
 
 export type PlayerData = z.infer<typeof PlayerDataSchema>
 
 export const ChatScreenDataSchema = z.object({
   playerDataArray: z.array(PlayerDataSchema),
+  messages: z.array(MessageSchema).optional(),
 })
 
 export type ChatScreenData = z.infer<typeof ChatScreenDataSchema>
@@ -142,7 +144,7 @@ export class Game {
   }
 
   nextGameState() {
-    const allGameStates: GameState[] = ["choose topic", "chatting", "voting", "results", "end"];
+    const allGameStates: GameState[] = ["choose topic", "chat", "group chat", "voting", "results", "end"];
     const i = allGameStates.indexOf(this.gameState);
     this.gameState = allGameStates[i + 1]
   }
@@ -150,13 +152,17 @@ export class Game {
   async playState(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
     switch (this.gameState) {
       case "choose topic":
-        this.showChooseTopicScreenForAll(io);
-        await this.sleepAndUpdateProgress(io, 5) // 60s
+        this.showChooseTopicScreenForAll(io)
+        await this.sleepAndUpdateProgress(io, 3) // 60s
         break;
-      case "chatting":
+      case "group chat":
+        this.showGroupChatForAll(io, playerDataStore)
+        await this.sleepAndUpdateProgress(io, 60*3) // 60s
+        break;
+      case "chat":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io, 60*3000) // 3*60s
+          await this.sleepAndUpdateProgress(io, 10) // 3*60s
           this.nextRound()
           this.save(gameStore)
         }
@@ -175,8 +181,11 @@ export class Game {
       case "choose topic":
         this.showChooseTopicScreen(io, player);
         break;
-      case "chatting":
+      case "chat":
         await this.showChatScreen(io, messageStore, playerDataStore, player)
+        break;
+      case "group chat":
+        await this.showGroupChat(io, playerDataStore, player)
         break;
       case "voting":
         this.showVotingScreen(io, player)
@@ -232,32 +241,15 @@ export class Game {
         if (partnerIndex === undefined) {
           throw new Error("partnerIndex is undefined")
         }
-
-        const playerData: PlayerData = { 
-          color: this.getPlayerColor(player),
-          chosenTopic: await playerDataStore.getPlayerData(this.gameId, player, "topic"),
-          chosenTalksAbout: await playerDataStore.getPlayerData(this.gameId, player, "talks about"),
-          userId: player.userId,
-          username: "You",
-          connected: true,
-          isCurrentPlayer: true,
-        }
-
         const partner = this.players[partnerIndex]
+
+        const playerData = await this.getPlayerData(playerDataStore, player, true)
+        const partnerData = await this.getPlayerData(playerDataStore, partner, false)
         const messages = await getMessages(messageStore, player.userId, partner.userId)
-        const partnerData: PlayerData = { 
-          color: this.getPlayerColor(partner),
-          chosenTopic: await playerDataStore.getPlayerData(this.gameId, partner, "topic"),
-          chosenTalksAbout: await playerDataStore.getPlayerData(this.gameId, partner, "talks about"),
-          userId: partner.userId,
-          username: "Partner",
-          connected: true,
-          isCurrentPlayer: false,
-          messages: messages
-        }
 
         const chatScreenData: ChatScreenData = {
-          playerDataArray: [playerData, partnerData]
+          playerDataArray: [playerData, partnerData],
+          messages: messages
         }
 
         this.showInfoScreen(io, player, `You are now going to talk to the ${this.getPlayerColor(partner)} player`)
@@ -271,6 +263,29 @@ export class Game {
   async showChatScreenForAll(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
     this.players.forEach((player) => {
       this.showChatScreen(io, messageStore, playerDataStore, player)
+    })
+  }
+
+  async showGroupChat(io: SocketIOServer, playerDataStore: PlayerDataStore, player: Player) {
+    const playerDataArray: PlayerData[] = []
+    for (const p of this.players) {
+      const isCurrentPlayer = p.userId === player.userId;
+      const playerData = await this.getPlayerData(playerDataStore, p, isCurrentPlayer)
+      playerDataArray.push(playerData)
+    }
+    const chatScreenData: ChatScreenData = {
+      playerDataArray: playerDataArray
+    }
+    this.showInfoScreen(io, player, "You are now going to everybody at the same time in a group chat")
+    io.to(player.userId).emit("game state chat screen", chatScreenData)
+    this.players.forEach((p) => {
+        io.to(p.userId).emit("game state partner connected", player.userId)
+    })
+  }
+
+  async showGroupChatForAll(io: SocketIOServer, playerDataStore: PlayerDataStore) {
+    this.players.forEach((player) => {
+      this.showGroupChat(io, playerDataStore, player)
     })
   }
 
@@ -327,6 +342,19 @@ export class Game {
     } else {
       return this.playerLabel
     }
+  }
+
+  async getPlayerData(playerDataStore: PlayerDataStore, player: Player, isCurrentPlayer: boolean): Promise<PlayerData> {
+    const playerData: PlayerData = { 
+      color: this.getPlayerColor(player),
+      chosenTopic: await playerDataStore.getPlayerData(this.gameId, player, "topic"),
+      chosenTalksAbout: await playerDataStore.getPlayerData(this.gameId, player, "talks about"),
+      userId: player.userId,
+      username: "Partner",
+      connected: true,
+      isCurrentPlayer: isCurrentPlayer,
+    }
+    return playerData
   }
 
   isImposter(player: Player): boolean {

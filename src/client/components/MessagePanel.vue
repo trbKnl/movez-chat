@@ -145,7 +145,11 @@ export default {
 
     getBackgroundColor(message) {
       const player = this.players.find(player => player.userId === message.fromUserId)
-      return PlayerColorMapping[player.color]
+      if (player !== undefined) {
+        return PlayerColorMapping[player.color]
+      } else {
+        return "hidden"
+      }
     },
 
     getMessageClass(message) {
