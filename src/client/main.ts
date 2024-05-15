@@ -10,5 +10,4 @@ import FloatingVue from 'floating-vue'
 
 app.use(FloatingVue)
 
-
 app.mount("#app");

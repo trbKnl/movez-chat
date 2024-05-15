@@ -8,11 +8,10 @@ export const MessageSchema = z.object({
   content: z.string(),
   fromUserId: z.string(),
   toUserId: z.string(),
+  fromSelf: z.boolean().optional(),
 })
 
-
 export type Message = z.infer<typeof MessageSchema>
-
 
 export class RedisMessageStore {
   private redisClient: Redis

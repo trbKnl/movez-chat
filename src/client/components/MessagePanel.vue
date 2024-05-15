@@ -14,23 +14,23 @@
       <div class="m-5 p-3 w-full mx-4 my-4">
         <ul class="flex flex-col">
           <li
-            v-for="(message, index) in user.messages"
+            v-for="(message, index) in messages"
             :key="index"
-            :class="getMessageClass(message, this.user)"
+            :class="getMessageClass(message)"
           >
-           <!-- Removed the sender's username display -->
+             <!-- Removed the sender's username display -->
             <div v-if="displaySender(message, index)" class="font-semibold">
-              {{ message.fromSelf ? "You" : user.username }}
+              {{ message.fromSelf ? "You" : "Partner" }}
             </div> 
 
             <div class="text-base tracking-normal">{{ message.content }}</div>
+
           </li>
         </ul>
       </div>
       </div>
     </div>
 
-            
     <!-- Bottom item with fixed height -->
     <div class="relative w-300 h-200 m-5">
         <div class="flex justify-between items-center bg-gray-100 rounded-lg border border-gray-300">
@@ -60,19 +60,18 @@
   </div>
 </template>
 
-
 <script>
 import { PlayerColorMapping } from '../config.ts'
 import insertText from "insert-text-at-cursor"
 import { VuemojiPicker } from 'vuemoji-picker'
 
-
 export default {
   name: "MessagePanel",
   emits: ["input"],
-  props: {
-    user: Object,
-  },
+  props: [
+    "players",
+    "messages"
+  ],
   data() {
     return {
       input: "",
@@ -84,7 +83,7 @@ export default {
   methods: {
     onSubmit() {
       if (this.isValid) {
-         this.$refs.dropdown.hide();
+        this.$refs.dropdown.hide();
         this.$emit("input", this.input);
         this.input = "";
       }
@@ -102,35 +101,23 @@ export default {
     },
 
     handleKeyAnywhere(event) {
-      // Check if the event occurred in the textarea or if it's a modifier key
-       // Check if the event occurred in the textarea or if it's a modifier key
       if (event.target !== this.$refs.inputBox && !event.metaKey && !event.ctrlKey && !event.altKey) {
-        // Prevent the default action to avoid scrolling the page
         event.preventDefault();
 
-        // Get the textarea reference and focus it
         const textarea = this.$refs.inputBox;
         textarea.focus();
 
-        // Get the pressed key
         const key = event.key;
-
-        // Check if Shift is pressed
         const isShiftPressed = event.shiftKey;
 
-        // If Shift is pressed and the key is alphabetic, convert it to uppercase
         if (isShiftPressed && /^[a-zA-Z]$/.test(key)) {
-          // Convert to uppercase
           const upperKey = key.toUpperCase();
-
-          // Simulate typing by inserting the uppercase key into the textarea
           const start = textarea.selectionStart;
           const end = textarea.selectionEnd;
           textarea.value = textarea.value.slice(0, start) + upperKey + textarea.value.slice(end);
-
-          // Adjust the cursor position
           textarea.selectionStart = start + 1;
           textarea.selectionEnd = start + 1;
+
         } else if (key !== "Shift") {
           // For other keys, simulate typing as before
           const start = textarea.selectionStart;
@@ -145,7 +132,7 @@ export default {
     displaySender(message, index) {
       return (
         index === 0 ||
-        this.user.messages[index - 1].fromSelf !== message.fromSelf
+        this.messages[index - 1].fromSelf !== message.fromSelf
       );
     },
 
@@ -156,15 +143,20 @@ export default {
       });
     },
 
-    getMessageClass(message, user) {
-      const bgColorClass = message.fromSelf ? `${PlayerColorMapping[user.playerColor]}` : `${PlayerColorMapping[user.partnerColor]}`;
+    getBackgroundColor(message) {
+      const player = this.players.find(player => player.userId === message.fromUserId)
+      return PlayerColorMapping[player.color]
+    },
+
+    getMessageClass(message) {
+      const bgColorClass = this.getBackgroundColor(message)
       return {
         [bgColorClass]: true,
         'self-start ml-5': !message.fromSelf,
         'self-end mr-5': message.fromSelf,
         'text-white py-2 px-3 rounded-lg max-w-max max-h-max p-10 m-1 shadow-lg': true
-      };
-    }
+      }
+    },
   },
 
   computed: {
@@ -175,7 +167,6 @@ export default {
   mounted() {
 
     this.scrollToBottom();
-
     this.$nextTick(() => {
       this.$refs.inputBox.focus()
     })

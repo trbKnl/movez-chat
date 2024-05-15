@@ -5,6 +5,8 @@ import { RedisSessionStore } from './sessionStore'
 import { Redis } from 'ioredis'
 import { z } from 'zod'
 
+import { MessageSchema } from './messageStore'
+
 // PLAYER CLASS
 
 export const PlayerSchema = z.object({
@@ -70,18 +72,24 @@ export const ResultScreenDataSchema = z.object({
 
 export type ResultScreenData = z.infer<typeof ResultScreenDataSchema>
 
-
-export const ChatRoundDataSchema = z.object({
-  playerColor: PlayerColorSchema,
-  playerChosenTopic: z.string(),
-  playerChosenTalksAbout: z.string(),
-  partnerColor: PlayerColorSchema,
-  partnerChosenTopic: z.string(),
-  partnerChosenTalksAbout: z.string(),
+export const PlayerDataSchema = z.object({
+  color: PlayerColorSchema,
+  chosenTopic: z.string(),
+  chosenTalksAbout: z.string(),
+  userId: z.string(),
+  username: z.string(),
+  connected: z.boolean(),
+  isCurrentPlayer: z.boolean(),
+  messages: z.array(MessageSchema).optional(),
 })
 
-export type ChatRoundData = z.infer<typeof ChatRoundDataSchema>
+export type PlayerData = z.infer<typeof PlayerDataSchema>
 
+export const ChatScreenDataSchema = z.object({
+  playerDataArray: z.array(PlayerDataSchema),
+})
+
+export type ChatScreenData = z.infer<typeof ChatScreenDataSchema>
 
 // GAME OBJECT
 
@@ -225,20 +233,36 @@ export class Game {
           throw new Error("partnerIndex is undefined")
         }
 
+        const playerData: PlayerData = { 
+          color: this.getPlayerColor(player),
+          chosenTopic: await playerDataStore.getPlayerData(this.gameId, player, "topic"),
+          chosenTalksAbout: await playerDataStore.getPlayerData(this.gameId, player, "talks about"),
+          userId: player.userId,
+          username: "You",
+          connected: true,
+          isCurrentPlayer: true,
+        }
+
         const partner = this.players[partnerIndex]
         const messages = await getMessages(messageStore, player.userId, partner.userId)
-        const user = { // For now this is still hacky, change to a custom type
+        const partnerData: PlayerData = { 
+          color: this.getPlayerColor(partner),
+          chosenTopic: await playerDataStore.getPlayerData(this.gameId, partner, "topic"),
+          chosenTalksAbout: await playerDataStore.getPlayerData(this.gameId, partner, "talks about"),
           userId: partner.userId,
           username: "Partner",
-          partnerColor: this.getPlayerColor(partner),
-          playerColor: this.getPlayerColor(player),
           connected: true,
+          isCurrentPlayer: false,
           messages: messages
         }
+
+        const chatScreenData: ChatScreenData = {
+          playerDataArray: [playerData, partnerData]
+        }
+
         this.showInfoScreen(io, player, `You are now going to talk to the ${this.getPlayerColor(partner)} player`)
-        io.to(player.userId).emit("game state users", user)
+        io.to(player.userId).emit("game state chat screen", chatScreenData)
         io.to(partner.userId).emit("game state partner connected", player.userId)
-        this.sendChatRoundInfo(io, playerDataStore, player, partner)
         return
       }
     }
@@ -248,22 +272,6 @@ export class Game {
     this.players.forEach((player) => {
       this.showChatScreen(io, messageStore, playerDataStore, player)
     })
-  }
-
-  async sendChatRoundInfo(io: SocketIOServer, playerDataStore: PlayerDataStore, user: Player, partner: Player) {
-    const yourChosenTopic = await playerDataStore.getPlayerData(this.gameId, user, "topic")
-    const yourChosenTalksAbout = await playerDataStore.getPlayerData(this.gameId, user, "talks about")
-    const partnerChosenTopic = await playerDataStore.getPlayerData(this.gameId, partner, "topic")
-    const partnerChosenTalksAbout = await playerDataStore.getPlayerData(this.gameId, partner, "talks about")
-    const chatRoundData: ChatRoundData = {
-      playerColor: this.getPlayerColor(user),
-      playerChosenTopic: yourChosenTopic,
-      playerChosenTalksAbout: yourChosenTalksAbout,
-      partnerColor: this.getPlayerColor(partner),
-      partnerChosenTopic: partnerChosenTopic,
-      partnerChosenTalksAbout: partnerChosenTalksAbout,
-    }
-    io.to(user.userId).emit("game state chat round info", chatRoundData)
   }
 
   async sendResultScreen(io: SocketIOServer, playerDataStore: PlayerDataStore) {

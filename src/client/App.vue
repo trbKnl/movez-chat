@@ -2,25 +2,25 @@
   <div id="app">
 
     <div v-if="showWelcomeScreen">
-      <Welcome @start-chat="startChat"/>
+      <Welcome @start-chat="startGame"/>
     </div>
 
     <div v-else>
-      <chat />
+      <game />
     </div>
 
   </div>
 </template>
 
 <script>
-import Chat from "./components/Chat.vue";
+import Game from "./components/Game.vue";
 import Welcome from "./components/Welcome.vue";
 import socket from "./socket";
 
 export default {
   name: "App",
   components: {
-    Chat,
+    Game,
     Welcome,
   },
   data() {
@@ -29,7 +29,7 @@ export default {
     };
   },
   methods: {
-    startChat() {
+    startGame() {
       const sessionId = window.location.pathname.replace(/\/$/, '').split('/').pop();
       socket.auth = { sessionId };
       socket.connect();
@@ -42,7 +42,7 @@ export default {
   created() {
     const hasSeenWelsomeScreen = localStorage.getItem("WelcomeScreenSeen");
     if (hasSeenWelsomeScreen === "true") {
-      this.startChat()
+      this.startGame()
     }
 
     socket.on("session", ({ sessionId, userId }) => {
