@@ -79,5 +79,7 @@ export default {
 <style scoped>
 button {
 	color: white;
+  position:absolute;
+	bottom:200px;
 }
 </style>
