@@ -35,17 +35,17 @@
 					<h1 class="font-bold text-5xl text-movez-purple">
 						GUESS THE IMPOSTER?
 					</h1>
-					<div class="flex justify-center mt-10 wrapper">
+					<div class="flex justify-center mt-10 wrapper" @click="handleClick">
 						<img src="/public/images/panda.svg" alt="panda" class="w-20" />
 						<p class="text-5xl flex items-center justify-center mx-9">Panda</p>
 					</div>
-					<div class="flex justify-center mt-10 wrapper">
+					<div class="flex justify-center mt-10 wrapper"  @click="handleClick">
 						<img src="/public/images/cat.svg" alt="cat" class="w-20" />
 						<p class="text-5xl flex items-center justify-center mx-10 px-7">
 							Cat
 						</p>
 					</div>
-					<div class="flex justify-center mt-10 wrapper">
+					<div class="flex justify-center mt-10 wrapper"  @click="handleClick">
 						<img src="/public/images/dog.svg" alt="dog" class="w-20" />
 						<p class="text-5xl flex items-center justify-center mx-10 px-5">
 							Dog
@@ -109,6 +109,14 @@ export default {
 			this.chosenImposter = chosenImposter;
 			socket.emit("game state set chosen imposter", { chosenImposter });
 		},
+
+		handleClick(event) {
+			if (this.clickedElement) {
+				this.clickedElement.classList.remove("clicked");
+			}
+			this.clickedElement = event.currentTarget;
+			this.clickedElement.classList.add("clicked");
+		},
 	},
 };
 </script>
@@ -138,5 +146,10 @@ h1 {
 	left: 0;
 	width: 100%;
 	height: 100%;
+}
+
+.clicked {
+	background-color: #6e0069;
+	color: white;
 }
 </style>
