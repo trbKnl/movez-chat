@@ -59,12 +59,12 @@ body {
 }
 
 @font-face {
-  font-family: Lato;
-  src: "~/public/fonts/Lato-Regular.ttf";
+	font-family: Fieldwork-Thin;
+	src: url("/public/fonts/Fieldwork4GeoThin.otf");
 }
 
 #app {
-  font-family: Lato, Arial, sans-serif;
-  font-size: 14px;
+	font-family: Fieldwork-Thin, Arial, Helvetica, sans-serif;
+	font-size: 14px;
 }
 </style>

@@ -157,7 +157,7 @@ export class Game {
         break;
       case "group chat":
         this.showGroupChatForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 60*3) // 60s
+        await this.sleepAndUpdateProgress(io, 3) // 60s
         break;
       case "chat":
         while (this.currentRound < 3) {

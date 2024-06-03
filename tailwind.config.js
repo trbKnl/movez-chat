@@ -6,6 +6,11 @@ export default {
   ],
   theme: {
     extend: {},
+    colors: {
+			"movez-black": "#323232",
+			"movez-green": "#00d2c8",
+			"movez-purple": "#6e0069",
+		},
   },
   plugins: [],
 }
