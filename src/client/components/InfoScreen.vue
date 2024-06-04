@@ -11,7 +11,7 @@
         </button>
         <img src="/public/images/movez.png" alt="Avatar" class="mx-auto mb-2 w-16 h-16" />
         <div>{{ infoText }}</div>
-        <progress-bar :value="progressValue" />
+        <progress-bar :value="progressValue" :transitionSpeed="0.3" />
       </div>
     </div>
   </div>
@@ -30,13 +30,13 @@ export default {
   data() {
     return {
       progressValue: 0,
-      progressBarDuration: 3,
+      progressBarDuration: 5,
     };
   },
   methods: {
     startProgressBarTimer(seconds) {
       const duration = seconds * 1000
-      const steps = 100
+      const steps = 10 
       const increment = (duration / steps)
       let currentProgress = 0;
       const interval = setInterval(() => {
