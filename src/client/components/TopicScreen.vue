@@ -3,10 +3,54 @@
     <div class="absolute w-full h-full bg-gray-800 opacity-50"></div> 
     <div class="z-50">
       <div class="bg-white p-8 rounded-lg shadow-lg">
-        <p class="text-lg font-semibold text-gray-800 mb-2">You are the {{ playerColor }} Player</p>
-        <p class="text-lg font-semibold text-gray-800 mb-5">{{ topicQuestion }} </p>
-        <ThumbMenu @isThumbUp="thumbMenuCallback"/>
-        <ProgressBar class="mt-1" :value="progressBarValue" />
+
+
+        <div v-if="currentScreen == 'AssignmentScreen'">
+          <p class="text-lg font-semibold text-gray-800 mb-2">You are the {{ playerColor }} Player</p>
+          <p class="text-lg font-semibold text-gray-800 mb-2">2 more questions before we start the game</p>
+          <button 
+            @click="handleButtonClick" 
+            class="text-white font-bold py-2 px-4 rounded"
+            :class="{ 'bg-blue-500 hover:bg-blue-700': isButtonActive, 'bg-gray-300 cursor-not-allowed': !isButtonActive }"
+            :disabled="!isButtonActive"
+          >
+            Continue
+          </button>
+        </div>
+        
+        <div v-else-if="currentScreen == 'LikeScreen'">
+          <p class="text-lg font-semibold text-gray-800 mb-5">{{ topicQuestion }} </p>
+          <ThumbMenu @isThumbUp="likeCallback"/>
+          <p class="text font-semibold text-gray-800 mb-5"> Click on the thumbs-up or thumbs-down to make your choice. If you do not choose, we will decide for you</p>
+          <button 
+            @click="handleButtonClick" 
+            class="text-white font-bold py-2 px-4 rounded"
+            :class="{ 'bg-blue-500 hover:bg-blue-700': isButtonActive, 'bg-gray-300 cursor-not-allowed': !isButtonActive }"
+            :disabled="!isButtonActive"
+          >
+            Continue
+          </button>
+        </div>
+
+        <div v-else-if="currentScreen == 'ImposterScreen'">
+          <p class="text-lg font-semibold text-gray-800 mb-5">Would you like to be an imposter?</p>
+          <ThumbMenu @isThumbUp="imposterCallback"/>
+          <p class="text font-semibold text-gray-800 mb-5"> Click on the thumbs-up or thumbs-down to make your choice. If you do not choose, we will decide for you</p>
+          <button 
+            @click="handleButtonClick" 
+            class="text-white font-bold py-2 px-4 rounded"
+            :class="{ 'bg-blue-500 hover:bg-blue-700': isButtonActive, 'bg-gray-300 cursor-not-allowed': !isButtonActive }"
+            :disabled="!isButtonActive"
+          >
+            Continue
+          </button>
+        </div>
+
+        <div v-else>
+          <p class="text-lg font-semibold text-gray-800 mb-5">Waiting for the other players to finish</p>
+        </div>
+
+        <ProgressBar class="mt-5" :value="progressBarValue" />
       </div>
     </div>
   </div>
@@ -18,6 +62,7 @@ import TopicMenu from "./TopicMenu.vue"
 import ProgressBar from "./ProgressBar.vue"
 import ThumbMenu from "./ThumbMenu.vue"
 
+
 export default {
   components: {
     TopicMenu,
@@ -26,10 +71,10 @@ export default {
   },
   data() {
     return {
-      //chosenTopic: "" 
-      chosenTopic: "",
-      chosenTalksAbout: "",
-      progressBarValue: 0
+      progressBarValue: 0,
+      currentScreen: "AssignmentScreen",
+      screens: ["AssignmentScreen", "LikeScreen", "ImposterScreen", "Waiting"],
+      isButtonActive: true
     };
   },
   props: [ 
@@ -42,12 +87,30 @@ export default {
     })
   },
   methods: {
-    thumbMenuCallback(thumbValue) {
+    likeCallback(thumbValue) {
       console.log(`like topic value: ${thumbValue}`)
-      socket.emit("game state set topic", {
+      socket.emit("game state set like topic", {
         likeTopic: thumbValue
       })
-    }
+      this.isButtonActive = true
+    },
+
+    imposterCallback(thumbValue) {
+      console.log(`like imposter value: ${thumbValue}`)
+      socket.emit("game state set like imposter", {
+        likeImposter: thumbValue
+      })
+      this.isButtonActive = true
+    },
+
+    handleButtonClick() {
+      const index = this.screens.indexOf(this.currentScreen);
+      if (index !== -1 && index < this.screens.length - 1) {
+          this.currentScreen = this.screens[index + 1];
+      } 
+      this.isButtonActive = false
+    },
+
   }
 }
 </script>

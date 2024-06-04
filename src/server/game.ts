@@ -151,7 +151,7 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 10) // 60s
+        await this.sleepAndUpdateProgress(io, 30) // 60s
         break;
       case "group chat":
         this.showGroupChatForAll(io, playerDataStore)

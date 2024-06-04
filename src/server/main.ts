@@ -210,18 +210,24 @@ io.on("connection", async (socket) => {
   })
 
   // socket on game logic
-  socket.on("game state set topic", async ({likeTopic}) => {
+  socket.on("game state set like topic", async ({likeTopic}) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
-    console.log(likeTopic)
     if (userSessionData !== undefined) {
       playerDataStore.setPlayerData(userSessionData.gameId, player, "like topic", likeTopic)
+    }
+  })
+
+  socket.on("game state set like imposter", async ({likeImposter}) => {
+    const userSessionData = await sessionStore.findSession(player.sessionId)
+    if (userSessionData !== undefined) {
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "like imposter", likeImposter)
     }
   })
 
   socket.on("game state set chosen imposter", async ({chosenImposter}) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
     if (userSessionData !== undefined) {
-      playerDataStore.setPlayerData(userSessionData.gameId, player, "imposter", chosenImposter)
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "like imposter", chosenImposter)
     }
   })
 
