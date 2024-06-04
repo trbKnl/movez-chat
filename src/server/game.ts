@@ -48,10 +48,8 @@ export const GameDataSchema = z.object({
 export type GameData = z.infer<typeof GameDataSchema>
 
 export const ChooseTopicScreenDataSchema = z.object({
-  //topicQuestion: z.string(),
-  //topicOptions: z.array(z.string()),
-  playerRole: z.string(),
   playerColor: z.string(),
+  topicQuestion: z.string(),
 })
 
 export type ChooseTopicScreenData = z.infer<typeof ChooseTopicScreenDataSchema>
@@ -76,8 +74,8 @@ export type ResultScreenData = z.infer<typeof ResultScreenDataSchema>
 
 export const PlayerDataSchema = z.object({
   color: PlayerColorSchema,
-  chosenTopic: z.string(),
-  chosenTalksAbout: z.string(),
+  topicQuestion: z.string(),
+  likeTopic: z.string(),
   userId: z.string(),
   username: z.string(),
   connected: z.boolean(),
@@ -103,8 +101,7 @@ export class Game {
     public gameState: GameState
 
     private pairingsPerRound: number[][][]
-    //private topicQuestion: string
-    //private topicOptions: string[]
+    private topicQuestion: string
     private imposterLabel: string
     private playerLabel: string
     private playerColors: PlayerColor[]
@@ -133,6 +130,7 @@ export class Game {
     this.imposterLabel = "Imposter"
     this.playerLabel = "Player"
     this.playerColors = ["Yellow", "Green", "Blue", "Red"]
+    this.topicQuestion = "Do you like sports?"
   }
 
   async play(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
@@ -153,7 +151,7 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 3) // 60s
+        await this.sleepAndUpdateProgress(io, 10) // 60s
         break;
       case "group chat":
         this.showGroupChatForAll(io, playerDataStore)
@@ -203,10 +201,8 @@ export class Game {
   
   showChooseTopicScreen(io: SocketIOServer, player: Player) {
       const chooseTopicScreenData: ChooseTopicScreenData = {
-          //topicQuestion: this.topicQuestion, 
-          //topicOptions: this.topicOptions,
-          playerRole: this.getPlayerRole(player),
-          playerColor: this.getPlayerColor(player),
+        playerColor: this.getPlayerColor(player),
+        topicQuestion: this.topicQuestion
       }
       io.to(player.userId).emit("game state choose topic", chooseTopicScreenData)
   }
@@ -347,8 +343,8 @@ export class Game {
   async getPlayerData(playerDataStore: PlayerDataStore, player: Player, isCurrentPlayer: boolean): Promise<PlayerData> {
     const playerData: PlayerData = { 
       color: this.getPlayerColor(player),
-      chosenTopic: await playerDataStore.getPlayerData(this.gameId, player, "topic"),
-      chosenTalksAbout: await playerDataStore.getPlayerData(this.gameId, player, "talks about"),
+      topicQuestion: this.topicQuestion,
+      likeTopic: await playerDataStore.getPlayerData(this.gameId, player, "like topic"),
       userId: player.userId,
       username: "Partner",
       connected: true,

@@ -210,11 +210,11 @@ io.on("connection", async (socket) => {
   })
 
   // socket on game logic
-  socket.on("game state set topic", async ({chosenTopic, chosenTalksAbout}) => {
+  socket.on("game state set topic", async ({likeTopic}) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
+    console.log(likeTopic)
     if (userSessionData !== undefined) {
-      playerDataStore.setPlayerData(userSessionData.gameId, player, "topic", chosenTopic)
-      playerDataStore.setPlayerData(userSessionData.gameId, player, "talks about", chosenTalksAbout)
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "like topic", likeTopic)
     }
   })
 

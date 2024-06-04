@@ -7,8 +7,8 @@
         <status-icon class="ml-3" :connected="playerData.connected" />{{ status }}
       </div>
     </div>
-    <p>Topic: {{ playerData.chosenTopic }} </p>
-    <p>Talks about: {{ playerData.chosenTalksAbout }}</p>
+    <p>Topic: {{ playerData.topicQuestion }} </p>
+    <p>Like topic: {{ playerData.likeTopic }}</p>
   </div>
 </template>
 
