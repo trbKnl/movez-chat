@@ -19,6 +19,7 @@ export type Player = z.infer<typeof PlayerSchema>
 
 export const GameStateSchema = z.union([
   z.literal('choose topic'),
+  z.literal('overview'),
   z.literal('chat'),
   z.literal('group chat'),
   z.literal('voting'),
@@ -40,7 +41,7 @@ export type PlayerColor = z.infer<typeof PlayerColorSchema>;
 export const GameDataSchema = z.object({
   gameId: z.string(),
   players: z.array(PlayerSchema),
-  imposter: z.number(),
+  imposter: z.union([z.number(), z.undefined()]),
   currentRound: z.number(),
   gameState: GameStateSchema,
 })
@@ -61,6 +62,14 @@ export const VotingScreenDataSchema = z.object({
 })
 
 export type VotingScreenData = z.infer<typeof VotingScreenDataSchema>
+
+export const OverviewScreenDataSchema = z.object({
+  playerColor: z.string(),
+  playerRole: z.string(),
+  likeTopic: z.string(),
+})
+
+export type OverviewScreenData = z.infer<typeof OverviewScreenDataSchema>
 
 export const ResultScreenDataSchema = z.object({
   playerScore: z.number(),
@@ -96,7 +105,7 @@ export type ChatScreenData = z.infer<typeof ChatScreenDataSchema>
 export class Game {
     public gameId: string 
     public players: Player[]
-    public imposter: number 
+    public imposter: number | undefined
     public currentRound: number
     public gameState: GameState
 
@@ -109,14 +118,10 @@ export class Game {
     constructor(
       gameId: string,
       players:  Player[],
-      imposter?: number,
+      imposter: number | undefined,
       currentRound = 0,
       gameState: GameState = "choose topic",
     ) {
-
-    if (imposter === undefined) {
-      imposter = Math.floor(Math.random() * 4)
-    }
 
     this.gameId = gameId
     this.players = players
@@ -125,8 +130,6 @@ export class Game {
     this.gameState = gameState
 
     this.pairingsPerRound = [[[0,1], [2,3]], [[0,2], [1,3]], [[0,3], [1,2]]]
-    //this.topicQuestion = "Who is your favorite singer?" 
-    //this.topicOptions = ["Michael Jackson", "Birtnet Psiers", "George michel", "Arana Grando"]
     this.imposterLabel = "Imposter"
     this.playerLabel = "Player"
     this.playerColors = ["Yellow", "Green", "Blue", "Red"]
@@ -142,7 +145,7 @@ export class Game {
   }
 
   nextGameState() {
-    const allGameStates: GameState[] = ["choose topic", "chat", "group chat", "voting", "results", "end"];
+    const allGameStates: GameState[] = ["choose topic", "overview", "chat", "group chat", "voting", "results", "end"];
     const i = allGameStates.indexOf(this.gameState);
     this.gameState = allGameStates[i + 1]
   }
@@ -152,10 +155,15 @@ export class Game {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
         await this.sleepAndUpdateProgress(io, 30) // 60s
+        await this.assignImposter(playerDataStore)
+        break;
+      case "overview":
+        this.showOverviewScreenForAll(io, playerDataStore)
+        await this.sleepAndUpdateProgress(io, 30) // 60s
         break;
       case "group chat":
         this.showGroupChatForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 3) // 60s
+        await this.sleepAndUpdateProgress(io, 60) // 60s
         break;
       case "chat":
         while (this.currentRound < 3) {
@@ -178,6 +186,9 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreen(io, player);
+        break;
+      case "overview":
+        this.showOverviewScreen(io, player, playerDataStore);
         break;
       case "chat":
         await this.showChatScreen(io, messageStore, playerDataStore, player)
@@ -225,6 +236,22 @@ export class Game {
   showVotingScreenForAll(io: SocketIOServer) {
     this.players.forEach((player) => {
       this.showVotingScreen(io, player)
+    })
+  }
+ 
+  async showOverviewScreen(io: SocketIOServer, player: Player, playerDataStore: PlayerDataStore) {
+    const overviewScreenData: OverviewScreenData = {
+      playerColor: this.getPlayerColor(player),
+      playerRole: this.getPlayerRole(player),
+      likeTopic: await playerDataStore.getPlayerData(this.gameId, player, "like topic") || "like",
+
+    }
+    io.to(player.userId).emit("game state show overview screen", overviewScreenData)
+  }
+
+  showOverviewScreenForAll(io: SocketIOServer, playerDataStore: PlayerDataStore) {
+    this.players.forEach((player) => {
+      this.showOverviewScreen(io, player, playerDataStore)
     })
   }
  
@@ -286,6 +313,7 @@ export class Game {
   }
 
   async sendResultScreen(io: SocketIOServer, playerDataStore: PlayerDataStore) {
+    if (this.imposter === undefined) { return }
     const imposterColor = this.getPlayerColor(this.getPlayerByIndex(this.imposter))
     let individualResults = new Map()
     let playerScore = 0
@@ -344,13 +372,30 @@ export class Game {
     const playerData: PlayerData = { 
       color: this.getPlayerColor(player),
       topicQuestion: this.topicQuestion,
-      likeTopic: await playerDataStore.getPlayerData(this.gameId, player, "like topic"),
+      likeTopic: await playerDataStore.getPlayerData(this.gameId, player, "like topic") || "like",
       userId: player.userId,
       username: "Partner",
       connected: true,
       isCurrentPlayer: isCurrentPlayer,
     }
     return playerData
+  }
+
+  async assignImposter(playerDataStore: PlayerDataStore) {
+    if (this.imposter !== undefined) { return }
+    const candidates: number[] = []
+
+    for (const [index, player] of this.players.entries()) {
+      const likesToBeImposter = await playerDataStore.getPlayerData(this.gameId, player, "like imposter")
+      if (likesToBeImposter === "like") {
+        candidates.push(index)
+      }
+    }
+    if (candidates.length > 0) {
+      this.imposter = candidates[Math.floor(Math.random() * candidates.length)]
+    } else {
+      this.imposter = Math.floor(Math.random() * 4)
+    }
   }
 
   isImposter(player: Player): boolean {

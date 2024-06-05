@@ -9,6 +9,10 @@
       <TopicScreen v-bind="propsChooseTopicScreen"/>
    </div>
 
+   <div v-else-if="currentScreen === 'OverviewScreen'">
+      <OverviewScreen v-bind="propsOverviewScreen"/>
+   </div>
+
    <div v-else-if="currentScreen === 'VotingScreen'">
       <VotingScreen v-bind="propsVotingScreen"/>
    </div>
@@ -37,10 +41,11 @@ import TopicScreen from './TopicScreen.vue'
 import VotingScreen from './VotingScreen.vue'
 import ResultScreen from './ResultScreen.vue'
 import ChatScreen from './ChatScreen.vue'
+import OverviewScreen from './OverviewScreen.vue'
 
 
-import type { ChooseTopicScreenData, VotingScreenData, ChatScreenData, ResultScreenData } from '../../server/game.ts'
-type ShowScreen = "Waiting" | "ChooseTopic" | "ChatScreen" | "VotingScreen" | "ResultScreen" | "ThankYou" 
+import type { ChooseTopicScreenData, VotingScreenData, ChatScreenData, ResultScreenData, OverviewScreenData } from '../../server/game.ts'
+type ShowScreen = "Waiting" | "ChooseTopic" | "OverviewScreen" | "ChatScreen" | "VotingScreen" | "ResultScreen" | "ThankYou" 
 
 export default {
   name: "Game",
@@ -51,6 +56,7 @@ export default {
     VotingScreen,
     ResultScreen,
     ChatScreen,
+    OverviewScreen,
   },
   data(): {
     currentScreen: ShowScreen,
@@ -59,6 +65,7 @@ export default {
     propsVotingScreen: VotingScreenData | undefined,
     propsChatScreen: ChatScreenData | undefined,
     propsResultScreen: ResultScreenData | undefined,
+    propsOverviewScreen: OverviewScreenData | undefined,
     showInfoScreen: boolean,
 
     infoText: string,
@@ -109,6 +116,11 @@ export default {
     socket.on("game state result screen", (data) => {
       this.showScreen("ResultScreen")
       this.propsResultScreen = data
+    })
+
+    socket.on("game state show overview screen", (data) => {
+      this.showScreen("OverviewScreen")
+      this.propsOverviewScreen = data
     })
   },
 };
