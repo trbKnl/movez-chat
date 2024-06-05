@@ -50,7 +50,9 @@
           <p class="text-lg font-semibold text-gray-800 mb-5">Waiting for the other players to finish</p>
         </div>
 
-        <ProgressBar class="mt-5" :value="progressBarValue" />
+        <div class="flex flex-col w-[350px] h-[35px] mt-5">
+          <ProgressBar :value="progressBarValue" />
+        </div>
       </div>
     </div>
   </div>

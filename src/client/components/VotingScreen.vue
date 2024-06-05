@@ -62,7 +62,11 @@
 						@chosenOption="setImposterChoice"
 					/> -->
 				</div>
-				<ProgressBar class="mt-4" :value="progressBarValue" />
+
+        <div class="flex flex-col h-[35px] w-[350px] mt-5">
+          <ProgressBar :value="progressBarValue" />
+        </div>
+
 			</div>
 		</div>
 	</div>

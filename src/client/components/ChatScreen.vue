@@ -12,8 +12,8 @@
               <PlayerCard :playerData="playerData"/>
             </div>
           </div>
-
-          <progress-bar class="m-1" :value="chatRoundProgressValue" />
+ 
+          <progress-bar class="flex flex-col h-[35px] mt-3" :value="chatRoundProgressValue" />
         </div>
 
       </div>

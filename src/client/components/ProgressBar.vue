@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isStatic">
+    <div v-if="isStatic" class="flex-1">
       <div class="progress">
         <div class="staticbar"
           :style="{ 
@@ -8,7 +8,7 @@
         />
       </div>
     </div>
-    <div v-else>
+    <div v-else class="flex-1">
       <div class="progress">
         <div class="bar"
           :style="{ 
@@ -17,7 +17,7 @@
           }"
         />
       </div>
-	</div>
+    </div>
 </template>
 
 <script>
@@ -43,8 +43,8 @@ export default {
 
 <style>
 .progress {
-	width: 350px;
-	height: 35px;
+	width: 100%;
+	height: 100%;
 	border-radius: 4px;
 	border: 1px solid #00d2c8;
 	padding: 7px 5px;

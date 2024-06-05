@@ -7,7 +7,9 @@
 			<h2 class="text-5xl font-thin text-white">
 				Waiting for {{ playersNeeded }} players to start the game...
 			</h2>
-			<ProgressBar :isStatic="true"/>
+      <div class="flex flex-col w-[350px] h-[35px]">
+        <ProgressBar :isStatic="true"/>
+      </div>
 		</div>
 	</div>
 </template>
