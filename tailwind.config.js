@@ -10,6 +10,7 @@ export default {
         "movez-black": "#323232",
         "movez-green": "#00d2c8",
         "movez-purple": "#6e0069",
+        "movez-pale-pink": "#e3dad8"
       },
     },
   },
