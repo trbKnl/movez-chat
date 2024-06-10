@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="fixed top-0 left-0 w-full h-full flex justify-center mt-10 pt-10 z-50"
+		class="fixed top-0 left-0 w-full h-full flex justify-center bg-white mt-10 pt-10 z-50"
 	>
 		<div class="absolute w-full h-full bg-white"></div>
 		<div class="z-50 text-center">
@@ -35,20 +35,15 @@
 					<h1 class="font-bold text-5xl text-movez-purple">
 						GUESS THE IMPOSTER?
 					</h1>
-					<div class="flex justify-center mt-10 wrapper" @click="handleClick">
-						<img src="/public/images/panda.svg" alt="panda" class="w-20" />
-						<p class="text-5xl flex items-center justify-center mx-9">Panda</p>
-					</div>
-					<div class="flex justify-center mt-10 wrapper"  @click="handleClick">
-						<img src="/public/images/cat.svg" alt="cat" class="w-20" />
-						<p class="text-5xl flex items-center justify-center mx-10 px-7">
-							Cat
-						</p>
-					</div>
-					<div class="flex justify-center mt-10 wrapper"  @click="handleClick">
-						<img src="/public/images/dog.svg" alt="dog" class="w-20" />
-						<p class="text-5xl flex items-center justify-center mx-10 px-5">
-							Dog
+					<div
+						v-for="(color, index) in playerColorsNotYourOwn"
+						:key="index"
+						class="flex justify-center mt-10 wrapper"
+						@click="handleClick"
+					>
+						<img :src="iconMapping[color]" :alt="color" class="w-20" />
+						<p class="text-5xl flex items-center justify-center mx-9">
+							{{ color }}
 						</p>
 					</div>
 					<p class="mt-10 text-lg">
@@ -63,10 +58,9 @@
 					/> -->
 				</div>
 
-        <div class="flex flex-col h-[35px] w-[350px] mt-5">
-          <ProgressBar :value="progressBarValue" />
-        </div>
-
+				<div class="flex flex-col h-[35px] w-[350px] mt-5">
+					<ProgressBar :value="progressBarValue" />
+				</div>
 			</div>
 		</div>
 	</div>
@@ -76,6 +70,10 @@
 import socket from "../socket";
 import TopicMenu from "./TopicMenu.vue";
 import ProgressBar from "./ProgressBar.vue";
+import PandaIcon from "../../../public/images/panda.svg";
+import CatIcon from "../../../public/images/cat.svg";
+import DogIcon from "../../../public/images/dog.svg";
+import SlothIcon from "../../../public/images/sloth.svg";
 
 export default {
 	components: {
@@ -86,6 +84,12 @@ export default {
 		return {
 			chosenImposter: "",
 			progressBarValue: 0,
+			iconMapping: {
+				Yellow: CatIcon,
+				Green: SlothIcon,
+				Blue: PandaIcon,
+				Red: DogIcon,
+			},
 		};
 	},
 	props: ["playerColor", "playerRole", "playerColors"],
@@ -138,7 +142,7 @@ h1 {
 }
 .wrapper:active {
 	border: 4px #6e0069;
-  background-color: #6e0069;
+	background-color: #6e0069;
 }
 .gif-container {
 	position: relative;
