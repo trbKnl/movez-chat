@@ -227,7 +227,7 @@ io.on("connection", async (socket) => {
   socket.on("game state set chosen imposter", async ({chosenImposter}) => {
     const userSessionData = await sessionStore.findSession(player.sessionId)
     if (userSessionData !== undefined) {
-      playerDataStore.setPlayerData(userSessionData.gameId, player, "like imposter", chosenImposter)
+      playerDataStore.setPlayerData(userSessionData.gameId, player, "chosen imposter color", chosenImposter)
     }
   })
 

@@ -76,7 +76,7 @@
 				</p>
 				<button
 					@click="handleButtonClick"
-					class="text-white font-bold py-2 px-4 rounded"
+					class="text-white font-bold py-2 px-4 rounded mt-3"
 					:class="{
 						'bg-blue-500 hover:bg-blue-700': isButtonActive,
 						'bg-gray-300 cursor-not-allowed': !isButtonActive,
@@ -96,6 +96,8 @@
 			<div class="flex flex-col w-[350px] h-[35px] mt-7">
 				<ProgressBar :value="progressBarValue" />
 			</div>
+
+      Game will start when the bar is full
 		</div>
 	</div>
 	<!-- </div> -->

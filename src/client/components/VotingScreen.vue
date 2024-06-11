@@ -38,8 +38,8 @@
 					<div
 						v-for="(color, index) in playerColorsNotYourOwn"
 						:key="index"
-						class="flex justify-center mt-10 wrapper"
-						@click="handleClick"
+						class="flex justify-center mt-10 wrapper border-4 border-transparent hover:border-movez-purple cursor-pointer"
+						@click="(event) => handleClick(event, color)"
 					>
 						<img :src="iconMapping[color]" :alt="color" class="w-20" />
 						<p class="text-5xl flex items-center justify-center mx-9">
@@ -50,12 +50,6 @@
 						Vote for the player who YOU think is the imposter.
 					</p>
 					<p class="text-lg">If you do not choose, the imposter might win...</p>
-					<!-- <TopicMenu
-						:menuLabel="'Select the imposter'"
-						:menuLabelChosen="'You picked: '"
-						:menuOptions="playerColorsNotYourOwn"
-						@chosenOption="setImposterChoice"
-					/> -->
 				</div>
 
 				<div class="flex flex-col h-[35px] w-[350px] mt-5">
@@ -104,11 +98,6 @@ export default {
 		});
 	},
 	methods: {
-		selectOption(option) {
-			this.chosenImoster = option;
-			this.isMenuOpen = false;
-		},
-
 		toggleMenu() {
 			this.isMenuOpen = !this.isMenuOpen;
 		},
@@ -118,7 +107,8 @@ export default {
 			socket.emit("game state set chosen imposter", { chosenImposter });
 		},
 
-		handleClick(event) {
+		handleClick(event, color) {
+      this.setImposterChoice(color)
 			if (this.clickedElement) {
 				this.clickedElement.classList.remove("clicked");
 			}
@@ -136,13 +126,6 @@ export default {
 }
 h1 {
 	font-family: Fieldwork-Fat, sans-serif;
-}
-.wrapper:hover {
-	border: 4px solid #6e0069;
-}
-.wrapper:active {
-	border: 4px #6e0069;
-	background-color: #6e0069;
 }
 .gif-container {
 	position: relative;

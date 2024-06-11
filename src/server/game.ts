@@ -154,7 +154,7 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 15) // 60s
+        await this.sleepAndUpdateProgress(io, 30) // 100s
         await this.assignImposter(playerDataStore)
         break;
       case "overview":
@@ -163,19 +163,19 @@ export class Game {
         break;
       case "group chat":
         this.showGroupChatForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 35) // 60s
+        await this.sleepAndUpdateProgress(io, 1) // 60s
         break;
       case "chat":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io, 45) // 3*60s
+          await this.sleepAndUpdateProgress(io, 1) // 3*60s
           this.nextRound()
           this.save(gameStore)
         }
         break;
       case "voting":
         this.showVotingScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 15) // 30s
+        await this.sleepAndUpdateProgress(io, 20) // 30s
       case "results":
         await this.sendResultScreen(io, playerDataStore)
         break;
@@ -320,7 +320,7 @@ export class Game {
     let imposterScore = 0
     for (const player of this.players) {
       if (!this.isImposter(player)) {
-        const chosenImposterColor = await playerDataStore.getPlayerData(this.gameId, player, "imposter")
+        const chosenImposterColor = await playerDataStore.getPlayerData(this.gameId, player, "chosen imposter color")
         const playerWon = imposterColor === chosenImposterColor
         individualResults.set(player.sessionId, playerWon)
         if (playerWon) {
