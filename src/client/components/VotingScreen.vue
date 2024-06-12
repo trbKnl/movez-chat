@@ -54,6 +54,7 @@
 
 				<div class="flex flex-col h-[35px] w-[350px] mt-5">
           <ProgressBar 
+            :key="playerColor"
             :percentageComplete="progressBarValue" 
             :showTimerOnPercentageComplete="0" 
             :secondsLeft="secondsLeftInRound"

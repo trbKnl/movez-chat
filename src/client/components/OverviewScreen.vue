@@ -12,12 +12,15 @@
 					class="player-role text-4xl font-bold mt-10 text-center"
 					v-if="playerRole === 'Imposter'"
 				>
-					Make the others believe that <br />
-					you don't {{ likeTopic === "like" ? "dislike" : "like" }} sports
+          <div v-if="likeTopic === 'like'">
+            {{ gameTexts.overviewImposterAssignmentLike }}
+          </div>
+          <div v-else>
+            {{ gameTexts.overviewImposterAssignmentDislike }}
+          </div>
 				</div>
 				<div v-else class="player-role text-4xl font-bold mt-10 text-center">
-					Who is the imposter, and is lying <br />
-					about their feelings toward sports?
+          {{ gameTexts.overviewPlayerAssignment }}
 				</div>
 			</div>
 		</div>
@@ -31,7 +34,12 @@ import DogIcon from "../../../public/images/dog.svg";
 import SlothIcon from "../../../public/images/sloth.svg";
 
 export default {
-	props: ["playerColor", "playerRole", "likeTopic"],
+	props: [
+    "playerColor", 
+    "playerRole", 
+    "likeTopic",
+    "gameTexts",
+  ],
 	data() {
 		return {
 			iconMapping: {

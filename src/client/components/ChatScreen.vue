@@ -11,7 +11,7 @@
 				<hr />
 				<div v-for="(playerData, index) in playerDataArray" :key="index">
 					<div v-if="playerData !== undefined">
-						<PlayerCard :playerData="playerData" />
+						<PlayerCard :playerData="playerData" :gameTexts="gameTexts" />
 					</div>
 				</div>
 
@@ -27,6 +27,7 @@
 		</div>
 		<div class="w-2/3 bg-white">
 			<message-panel
+        :playerRole="playerRole"
 				:players="playerDataArray"
 				:messages="messageData"
 				@input="onMessage"
@@ -39,6 +40,8 @@
 // CODE NOT COMPLETELY IN TYPESCRIPT
 
 import socket from "../socket";
+import { PropType } from 'vue'
+
 import PlayerCard from "./PlayerCard.vue";
 import MessagePanel from "./MessagePanel.vue";
 import ProgressBar from "./ProgressBar.vue";
@@ -46,6 +49,7 @@ import ProgressBar from "./ProgressBar.vue";
 import { PlayerColorMapping } from "../config";
 import type { PlayerData, PlayerColor } from "../../server/game.ts";
 import type { Message } from "../../server/messageStore.ts";
+import type { GameTexts } from "../../server/gameTexts";
 
 export default {
 	name: "ChatScreen",
@@ -65,7 +69,13 @@ export default {
 		},
     roundIndicator: {
       type: String,
-    }
+    },
+    gameTexts: {
+      type: Object as PropType<GameTexts>,
+    },
+    playerRole: {
+      type: String,
+    },
 	},
 	watch: {
 		playerDataArray() {
@@ -86,7 +96,7 @@ export default {
 		return {
 			playerColorMapping: PlayerColorMapping,
 			chatRoundProgressValue: 0, // progress bar data
-			secondsLeftInRound: -1, // progress bar data
+			secondsLeftInRound: -1,    // progress bar data
 			playerConnected: true,
 			messageData: [],
 		};

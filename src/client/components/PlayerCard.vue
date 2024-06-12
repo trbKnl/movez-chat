@@ -3,22 +3,39 @@
 		class="flex mt-3 p-5 items-center"
 		:class="{ 'bg-movez-purple text-white': playerData.isCurrentPlayer }"
 	>
-		<!-- <div
-				:class="
-					'w-6 m-1 h-6 rounded-full ' + playerColorMapping[playerData.color]
-				"
-			></div>
-			<h3 class="text-lg font-semibold">{{ playerData.color }}</h3>
-			<div class="status">
-				<status-icon class="ml-3" :connected="playerData.connected" />{{
-					status
-				}}
-			</div> -->
-
 		<img :src="getPlayerIcon(playerData.color)" class="w-20 h-20" />
-		<p class="text-2xl ml-10">{{ playerData.topicQuestion }}</p>
+		<p class="text-2xl ml-10">
+      <div v-if="playerData.isCurrentPlayer">
+        <div v-if="playerData.playerRole === 'Imposter'">
+          <div v-if="playerData.likeTopic === 'like'">
+            {{ gameTexts.chatScreenYouLike }}. <br />
+            {{ gameTexts.overviewImposterAssignmentLike }}
+          </div>
+          <div v-else>
+            {{ gameTexts.chatScreenYouDislike }} <br />
+            {{ gameTexts.overviewImposterAssignmentDislike }}
+          </div>
+        </div>
+        <div v-else>
+          <div v-if="playerData.likeTopic === 'like'">
+            {{ gameTexts.chatScreenYouLike }}
+          </div>
+          <div v-else>
+            {{ gameTexts.chatScreenYouDislike }}
+          </div>
+        </div>
+
+      </div>
+      <div v-else>
+        <div v-if="playerData.likeTopic === 'like'">
+          {{ gameTexts.chatScreenPlayerLike.replace(/<PLAYER>/g, playerData.color) }}
+        </div>
+        <div v-else>
+          {{ gameTexts.chatScreenPlayerDislike.replace(/<PLAYER>/g, playerData.color) }}
+        </div>
+      </div>
+    </p>
 	</div>
-	<!-- <p>Like topic: {{ playerData.likeTopic }}</p> -->
 </template>
 
 <script>
@@ -32,7 +49,10 @@ import SlothIcon from "../../../public/images/sloth.svg";
 export default {
 	name: "User",
 	components: { StatusIcon },
-	props: ["playerData"],
+	props: [
+    "playerData",
+    "gameTexts",
+  ],
 	methods: {
 		getPlayerIcon(color) {
 			return this.iconMapping[color] || null;
@@ -61,16 +81,4 @@ export default {
 </script>
 
 <style scoped>
-/* .status {
-	color: #92959e;
-}
-.new-messages {
-	color: white;
-	background-color: red;
-	width: 20px;
-	border-radius: 5px;
-	text-align: center;
-	float: right;
-	margin-top: 10px;
-} */
 </style>

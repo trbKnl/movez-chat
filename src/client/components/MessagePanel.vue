@@ -3,8 +3,12 @@
 		<!-- Top item with fixed height -->
 		<div class="flex items-center justify-around h-25 mb-10">
 			<p class="text-3xl font-bold text-movez-purple mt-8">
-				Team Work! Try to find out the <br />imposter together/Hey imposter, try
-				not to get caught.
+        <div v-if="playerRole === 'Imposter'">
+          Hey imposter, try not to get caught.
+        </div>
+        <div v-else>
+          Try to find out who the imposter is!
+        </div>
 			</p>
 			<img
 				src="/public/images/light-bulb.svg"
@@ -94,7 +98,11 @@ import SlothIcon from "../../../public/images/sloth.svg";
 export default {
 	name: "MessagePanel",
 	emits: ["input"],
-	props: ["players", "messages"],
+	props: [
+    "players", 
+    "messages",
+    "playerRole",
+  ],
 	data() {
 		return {
 			input: "",

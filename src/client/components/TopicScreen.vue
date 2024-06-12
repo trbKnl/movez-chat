@@ -35,10 +35,10 @@
 				v-else-if="currentScreen == 'LikeScreen'"
 			>
 				<h1 class="font-bold text-6xl mx-8 text-movez-purple">
-					You will talk about sports
+          {{ gameTexts.topicAssignment }}
 				</h1>
 				<h2 class="text-black text-3xl font-thin text-center mt-5 mb-5">
-					{{ topicQuestion }}
+					{{ gameTexts.topicQuestion }}
 				</h2>
 				<ThumbMenu @isThumbUp="likeCallback" />
 				<p class="text font-semibold text-gray-800 mb-5 text-center mt-5">
@@ -132,7 +132,10 @@ export default {
 			},
 		};
 	},
-	props: ["playerColor", "topicQuestion"],
+	props: [
+    "playerColor", 
+    "gameTexts"
+  ],
 	created() {
     socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
 			this.progressBarValue = percentageComplete

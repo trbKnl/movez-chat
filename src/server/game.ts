@@ -6,7 +6,12 @@ import { Redis } from 'ioredis'
 import { z } from 'zod'
 
 import { MessageSchema } from './messageStore'
-import { get } from "https"
+import type { GameTexts } from './gameTexts'
+import { gameTextsSports, GameTextsSchema } from './gameTexts'
+
+// Assign texts to game
+const gameTexts: GameTexts = gameTextsSports
+
 
 // PLAYER CLASS
 
@@ -50,7 +55,7 @@ export type GameData = z.infer<typeof GameDataSchema>
 
 export const ChooseTopicScreenDataSchema = z.object({
   playerColor: z.string(),
-  topicQuestion: z.string(),
+  gameTexts: GameTextsSchema,
 })
 
 export type ChooseTopicScreenData = z.infer<typeof ChooseTopicScreenDataSchema>
@@ -67,6 +72,7 @@ export const OverviewScreenDataSchema = z.object({
   playerColor: z.string(),
   playerRole: z.string(),
   likeTopic: z.string(),
+  gameTexts: GameTextsSchema,
 })
 
 export type OverviewScreenData = z.infer<typeof OverviewScreenDataSchema>
@@ -83,12 +89,12 @@ export type ResultScreenData = z.infer<typeof ResultScreenDataSchema>
 
 export const PlayerDataSchema = z.object({
   color: PlayerColorSchema,
-  topicQuestion: z.string(),
   likeTopic: z.string(),
   userId: z.string(),
   username: z.string(),
   connected: z.boolean(),
   isCurrentPlayer: z.boolean(),
+  playerRole: z.string(),
 })
 
 export type PlayerData = z.infer<typeof PlayerDataSchema>
@@ -97,6 +103,8 @@ export const ChatScreenDataSchema = z.object({
   playerDataArray: z.array(PlayerDataSchema),
   messages: z.array(MessageSchema).optional(),
   roundIndicator: z.string(),
+  gameTexts: GameTextsSchema,
+  playerRole: z.string(),
 })
 
 export type ChatScreenData = z.infer<typeof ChatScreenDataSchema>
@@ -111,7 +119,6 @@ export class Game {
     public gameState: GameState
 
     private pairingsPerRound: number[][][]
-    private topicQuestion: string
     private imposterLabel: string
     private playerLabel: string
     private playerColors: PlayerColor[]
@@ -134,7 +141,6 @@ export class Game {
     this.imposterLabel = "Imposter"
     this.playerLabel = "Player"
     this.playerColors = ["Yellow", "Green", "Blue", "Red"]
-    this.topicQuestion = "Do you like sports?"
   }
 
   async play(io: SocketIOServer, gameStore: GameStore, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
@@ -155,21 +161,21 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 100) // 100s
+        await this.sleepAndUpdateProgress(io, 1) // 100s
         await this.assignImposter(playerDataStore)
         break;
       case "overview":
         this.showOverviewScreenForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 10) // 60s
+        await this.sleepAndUpdateProgress(io, 1) // 60s
         break;
       case "group chat":
         await this.showGroupChatForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 10) // 60s
+        await this.sleepAndUpdateProgress(io, 100) // 60s
         break;
       case "chat":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io, 10) // 3*60s
+          await this.sleepAndUpdateProgress(io, 100) // 3*60s
           this.nextRound()
           this.save(gameStore)
         }
@@ -214,7 +220,7 @@ export class Game {
   showChooseTopicScreen(io: SocketIOServer, player: Player) {
       const chooseTopicScreenData: ChooseTopicScreenData = {
         playerColor: this.getPlayerColor(player),
-        topicQuestion: this.topicQuestion
+        gameTexts: gameTexts,
       }
       io.to(player.userId).emit("game state choose topic", chooseTopicScreenData)
   }
@@ -245,7 +251,7 @@ export class Game {
       playerColor: this.getPlayerColor(player),
       playerRole: this.getPlayerRole(player),
       likeTopic: await playerDataStore.getPlayerData(this.gameId, player, "like topic") || "like",
-
+      gameTexts: gameTexts,
     }
     io.to(player.userId).emit("game state show overview screen", overviewScreenData)
   }
@@ -274,7 +280,9 @@ export class Game {
         const chatScreenData: ChatScreenData = {
           playerDataArray: [playerData, partnerData],
           messages: messages,
-          roundIndicator: `Round ${this.currentRound + 1} of 3`
+          roundIndicator: `Round ${this.currentRound + 1} of 3`,
+          gameTexts: gameTexts,
+          playerRole: this.getPlayerRole(player)
         }
 
         this.showInfoScreen(io, player, `You are now going to talk to the ${this.getPlayerColor(partner)} player`)
@@ -300,7 +308,9 @@ export class Game {
     }
     const chatScreenData: ChatScreenData = {
       playerDataArray: playerDataArray,
-      roundIndicator: "Group Chat"
+      roundIndicator: "Group Chat",
+      gameTexts: gameTexts,
+      playerRole: this.getPlayerRole(player)
     }
     this.showInfoScreen(io, player, "You are now going to everybody at the same time in a group chat")
     io.to(player.userId).emit("game state chat screen", chatScreenData)
@@ -374,12 +384,12 @@ export class Game {
   async getPlayerData(playerDataStore: PlayerDataStore, player: Player, isCurrentPlayer: boolean): Promise<PlayerData> {
     const playerData: PlayerData = { 
       color: this.getPlayerColor(player),
-      topicQuestion: this.topicQuestion,
       likeTopic: await playerDataStore.getPlayerData(this.gameId, player, "like topic") || "like",
       userId: player.userId,
       username: "Partner",
       connected: true,
       isCurrentPlayer: isCurrentPlayer,
+      playerRole: this.getPlayerRole(player),
     }
     return playerData
   }
