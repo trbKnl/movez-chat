@@ -92,7 +92,7 @@
 			<div class="flex flex-col w-[350px] h-[35px] mt-7">
 				<ProgressBar 
           :percentageComplete="progressBarValue" 
-          :showTimerOnPercentageComplete="100" 
+          :showTimerOnPercentageComplete="0" 
           :secondsLeft="secondsLeftInRound"
         />
 			</div>

@@ -64,11 +64,11 @@ export default {
       if (
         this.secondsLeft !== -1 && 
         !this.isTimerRunning && 
-        val >=  this.showTimerOnPercentageComplete
+        val >= this.showTimerOnPercentageComplete
       ) {
         this.startTimer();
         this.isTimerRunning = true
-      }
+      } 
     }
   },
   methods: {
