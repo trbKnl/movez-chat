@@ -4,7 +4,6 @@
 	>
 		<div class="absolute w-full h-full bg-white opacity-50"></div>
 		<div class="z-50 flex flex-col items-center justify-center">
-			<!-- <div class="bg-white p-8 rounded-lg shadow-lg"> -->
 			<div
 				class="flex flex-col items-center justify-center"
 				v-if="currentScreen == 'AssignmentScreen'"
@@ -15,9 +14,6 @@
 						You are the {{ playerColor }} Player
 					</h1>
 				</div>
-				<!-- <p class="text-lg font-semibold text-gray-800 mb-2">
-					You are the {{ playerColor }} Player
-				</p> -->
 				<h2 class="text-black text-2xl font-thin text-center">
 					2 more questions before we start the game.
 				</h2>
@@ -94,10 +90,12 @@
 			</div>
 
 			<div class="flex flex-col w-[350px] h-[35px] mt-7">
-				<ProgressBar :value="progressBarValue" />
+				<ProgressBar 
+          :percentageComplete="progressBarValue" 
+          :showTimerOnPercentageComplete="100" 
+          :secondsLeft="secondsLeftInRound"
+        />
 			</div>
-
-      Game will start when the bar is full
 		</div>
 	</div>
 	<!-- </div> -->
@@ -122,6 +120,7 @@ export default {
 	data() {
 		return {
 			progressBarValue: 0,
+			secondsLeftInRound: -1,
 			currentScreen: "AssignmentScreen",
 			screens: ["AssignmentScreen", "LikeScreen", "ImposterScreen", "Waiting"],
 			isButtonActive: true,
@@ -135,8 +134,9 @@ export default {
 	},
 	props: ["playerColor", "topicQuestion"],
 	created() {
-		socket.on("game state progress update", (progress) => {
-			this.progressBarValue = progress;
+    socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
+			this.progressBarValue = percentageComplete
+      this.secondsLeftInRound = secondsLeft
 		});
 	},
 	methods: {

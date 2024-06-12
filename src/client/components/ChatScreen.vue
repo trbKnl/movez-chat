@@ -6,7 +6,7 @@
 					<h2 class="text-5xl font-bold text-movez-purple">Chat Room</h2>
 				</div>
 				<p class="flex items-center justify-between px-4 text-xl">
-					Round 1 of 3
+          {{ roundIndicator }}
 				</p>
 				<hr />
 				<div v-for="(playerData, index) in playerDataArray" :key="index">
@@ -15,10 +15,14 @@
 					</div>
 				</div>
 
-				<progress-bar
-					class="flex flex-col h-[35px] mt-3 mt-16"
-					:value="chatRoundProgressValue"
-				/>
+        <div class="flex flex-col h-[35px] mt-3 mt-16">
+          <ProgressBar
+            :key="roundIndicator"
+            :percentageComplete="chatRoundProgressValue"
+            :showTimerOnPercentageComplete="0"
+            :secondsLeft="secondsLeftInRound"
+          />
+        </div>
 			</div>
 		</div>
 		<div class="w-2/3 bg-white">
@@ -59,6 +63,9 @@ export default {
 			type: Array as () => Message[],
 			default: [],
 		},
+    roundIndicator: {
+      type: String,
+    }
 	},
 	watch: {
 		playerDataArray() {
@@ -71,6 +78,7 @@ export default {
 	},
 	data(): {
 		chatRoundProgressValue: number;
+    secondsLeftInRound: number;
 		playerColorMapping: Record<PlayerColor, string>;
 		playerConnected: boolean;
 		messageData: Message[];
@@ -78,6 +86,7 @@ export default {
 		return {
 			playerColorMapping: PlayerColorMapping,
 			chatRoundProgressValue: 0, // progress bar data
+			secondsLeftInRound: -1, // progress bar data
 			playerConnected: true,
 			messageData: [],
 		};
@@ -131,8 +140,9 @@ export default {
 			this.messageData.push({ content, fromUserId, toUserId, fromSelf });
 		});
 
-		socket.on("game state progress update", (progress) => {
-			this.chatRoundProgressValue = progress;
+    socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
+			this.chatRoundProgressValue = percentageComplete;
+			this.secondsLeftInRound = secondsLeft;
 		});
 
 		socket.on("disconnect", () => {

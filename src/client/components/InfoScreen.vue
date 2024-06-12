@@ -11,7 +11,11 @@
         </button>
         <img src="/public/images/movez.png" alt="Avatar" class="mx-auto mb-2 w-16 h-16" />
         <div>{{ infoText }}</div>
-        <progress-bar class="flex flex-col h-[35px] mt-2" :value="progressValue" :transitionSpeed="0.3" />
+        <ProgressBar
+          class="flex flex-col h-[35px] mt-2" 
+          :percentageComplete="progressValue" 
+          :transitionSpeed="0.3" 
+        />
       </div>
     </div>
   </div>

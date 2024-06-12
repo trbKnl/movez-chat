@@ -41,7 +41,7 @@ export type PlayerColor = z.infer<typeof PlayerColorSchema>;
 export const GameDataSchema = z.object({
   gameId: z.string(),
   players: z.array(PlayerSchema),
-  imposter: z.union([z.number(), z.undefined()]),
+  imposter: z.number().nullable(),
   currentRound: z.number(),
   gameState: GameStateSchema,
 })
@@ -96,6 +96,7 @@ export type PlayerData = z.infer<typeof PlayerDataSchema>
 export const ChatScreenDataSchema = z.object({
   playerDataArray: z.array(PlayerDataSchema),
   messages: z.array(MessageSchema).optional(),
+  roundIndicator: z.string(),
 })
 
 export type ChatScreenData = z.infer<typeof ChatScreenDataSchema>
@@ -105,7 +106,7 @@ export type ChatScreenData = z.infer<typeof ChatScreenDataSchema>
 export class Game {
     public gameId: string 
     public players: Player[]
-    public imposter: number | undefined
+    public imposter: number | null
     public currentRound: number
     public gameState: GameState
 
@@ -118,7 +119,7 @@ export class Game {
     constructor(
       gameId: string,
       players:  Player[],
-      imposter: number | undefined,
+      imposter: number | null,
       currentRound = 0,
       gameState: GameState = "choose topic",
     ) {
@@ -154,28 +155,28 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 30) // 100s
+        await this.sleepAndUpdateProgress(io, 100) // 100s
         await this.assignImposter(playerDataStore)
         break;
       case "overview":
         this.showOverviewScreenForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 15) // 60s
+        await this.sleepAndUpdateProgress(io, 20) // 60s
         break;
       case "group chat":
-        this.showGroupChatForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 1) // 60s
+        await this.showGroupChatForAll(io, playerDataStore)
+        await this.sleepAndUpdateProgress(io, 60*4) // 60s
         break;
       case "chat":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io, 1) // 3*60s
+          await this.sleepAndUpdateProgress(io, 60*3) // 3*60s
           this.nextRound()
           this.save(gameStore)
         }
         break;
       case "voting":
         this.showVotingScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 20) // 30s
+        await this.sleepAndUpdateProgress(io, 30) // 30s
       case "results":
         await this.sendResultScreen(io, playerDataStore)
         break;
@@ -183,6 +184,7 @@ export class Game {
   }
 
   async syncGameForSinglePlayer(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore, player: Player) {
+    console.log(`GAME STATE ${this.gameState}`)
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreen(io, player);
@@ -272,7 +274,8 @@ export class Game {
 
         const chatScreenData: ChatScreenData = {
           playerDataArray: [playerData, partnerData],
-          messages: messages
+          messages: messages,
+          roundIndicator: `Round ${this.currentRound + 1} of 3`
         }
 
         this.showInfoScreen(io, player, `You are now going to talk to the ${this.getPlayerColor(partner)} player`)
@@ -284,9 +287,9 @@ export class Game {
   }
 
   async showChatScreenForAll(io: SocketIOServer, messageStore: RedisMessageStore, playerDataStore: PlayerDataStore) {
-    this.players.forEach((player) => {
-      this.showChatScreen(io, messageStore, playerDataStore, player)
-    })
+    for (const player of this.players) {
+      await this.showChatScreen(io, messageStore, playerDataStore, player)
+    }
   }
 
   async showGroupChat(io: SocketIOServer, playerDataStore: PlayerDataStore, player: Player) {
@@ -297,7 +300,8 @@ export class Game {
       playerDataArray.push(playerData)
     }
     const chatScreenData: ChatScreenData = {
-      playerDataArray: playerDataArray
+      playerDataArray: playerDataArray,
+      roundIndicator: "Group Chat"
     }
     this.showInfoScreen(io, player, "You are now going to everybody at the same time in a group chat")
     io.to(player.userId).emit("game state chat screen", chatScreenData)
@@ -313,7 +317,7 @@ export class Game {
   }
 
   async sendResultScreen(io: SocketIOServer, playerDataStore: PlayerDataStore) {
-    if (this.imposter === undefined) { return }
+    if (this.imposter === null) { return }
     const imposterColor = this.getPlayerColor(this.getPlayerByIndex(this.imposter))
     let individualResults = new Map()
     let playerScore = 0
@@ -416,16 +420,18 @@ export class Game {
 
   async sleepAndUpdateProgress(io: SocketIOServer, secondsToSleep: number) {
     this.players.forEach((player) => {
-      io.to(player.userId).emit("game state progress update", 0)
+      io.to(player.userId).emit("game state progress update", { percentageComplete: 0, secondsLeft: secondsToSleep })
     })
+    let secondsLeft = secondsToSleep
     const updateRounds = 10
     const secondsArr = divideIntegerIntoParts(secondsToSleep, updateRounds) // array of ms
     for (let i = 0; i < secondsArr.length; i++) {
       const seconds = secondsArr[i]
       await sleep(seconds) 
       let percentageComplete = (i + 1) / updateRounds * 100
+      secondsLeft -= seconds
       this.players.forEach((player) => {
-        io.to(player.userId).emit("game state progress update", percentageComplete)
+        io.to(player.userId).emit("game state progress update", { percentageComplete, secondsLeft })
       })
     }
   }

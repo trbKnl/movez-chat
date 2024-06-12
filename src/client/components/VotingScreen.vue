@@ -53,7 +53,11 @@
 				</div>
 
 				<div class="flex flex-col h-[35px] w-[350px] mt-5">
-					<ProgressBar :value="progressBarValue" />
+          <ProgressBar 
+            :percentageComplete="progressBarValue" 
+            :showTimerOnPercentageComplete="0" 
+            :secondsLeft="secondsLeftInRound"
+          />
 				</div>
 			</div>
 		</div>
@@ -78,6 +82,7 @@ export default {
 		return {
 			chosenImposter: "",
 			progressBarValue: 0,
+			secondsLeftInRound: -1,
 			iconMapping: {
 				Yellow: CatIcon,
 				Green: SlothIcon,
@@ -93,8 +98,9 @@ export default {
 		},
 	},
 	created() {
-		socket.on("game state progress update", (progress) => {
-			this.progressBarValue = progress;
+    socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
+			this.progressBarValue = percentageComplete;
+			this.secondsLeftInRound = secondsLeft;
 		});
 	},
 	methods: {

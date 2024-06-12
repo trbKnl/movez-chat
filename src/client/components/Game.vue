@@ -78,6 +78,7 @@ export default {
       propsVotingScreen: undefined,
       propsChatScreen: undefined,
       propsResultScreen: undefined,
+      propsOverviewScreen: undefined,
 
       infoText: "",
     }

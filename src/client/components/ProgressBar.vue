@@ -1,33 +1,39 @@
 <template>
-    <div v-if="isStatic" class="flex-1">
-      <div class="progress">
-        <div class="staticbar"
-          :style="{ 
-            transition: 'width ' + transitionSpeed + 's ease-in-out'
-          }"
-        />
-      </div>
+  <div v-if="isStatic" class="flex-1">
+    <div class="progress">
+      <div class="staticbar"
+        :style="{ 
+          transition: 'width ' + transitionSpeed + 's ease-in-out'
+        }"
+      />
     </div>
-    <div v-else class="flex-1">
-      <div class="progress">
-        <div class="bar"
-          :style="{ 
-            width: value + '%',
-            transition: 'width ' + transitionSpeed + 's ease-in-out'
-          }"
-        />
-      </div>
+  </div>
+  <div v-else class="flex-1">
+    <div class="progress">
+      <div class="bar"
+        :style="{ 
+          width: percentageComplete + '%',
+          transition: 'width ' + transitionSpeed + 's ease-in-out'
+        }"
+      />
     </div>
+    <div>
+    <div v-if="isTimerRunning">
+      <p v-if="secondsToDisplay > 0">Time Left: {{ secondsToDisplay }} seconds</p>
+      <p v-else>Time's up!</p>
+    </div>
+  </div>
+  </div>
 </template>
 
 <script>
 export default {
 	name: "ProgressBar",
 	props: {
-	  value: {
+	  percentageComplete: {
 	    type: Number,
 	    required: false,
-	    validator: (value) => value >= 0 && value <= 100,
+	    validator: (percentageComplete) => percentageComplete >= 0 && percentageComplete <= 100,
 	  },
 	  isStatic: {
 	    type: Boolean,
@@ -37,7 +43,55 @@ export default {
 	    type: Number,
 	    default: 1,
 	  },
-	}
+    showTimerOnPercentageComplete: {
+      type: Number,
+      default: -1,
+    },
+    secondsLeft: {
+      type: Number,
+      default: -1,
+    }
+	},
+  data() {
+    return {
+      timer: null,
+      isTimerRunning: false,
+      secondsToDisplay: -1
+    }
+  },
+  watch: {
+    percentageComplete(val) {
+      if (
+        this.secondsLeft !== -1 && 
+        !this.isTimerRunning && 
+        val >=  this.showTimerOnPercentageComplete
+      ) {
+        this.startTimer();
+        this.isTimerRunning = true
+      }
+    }
+  },
+  methods: {
+    startTimer() {
+      this.secondsToDisplay = this.secondsLeft
+      this.timer = setInterval(() => {
+        if (this.secondsToDisplay > 0) {
+          this.secondsToDisplay--;
+        } else {
+          this.stopTimer();
+        }
+      }, 1000);
+    },
+    stopTimer() {
+      this.isTimerRunning = false
+      this.secondsToDisplay = -1
+      this.timer = null;
+      clearInterval(this.timer);
+    },
+  },
+  beforeDestroy() {
+    this.stopTimer();
+  }
 };
 </script>
 
