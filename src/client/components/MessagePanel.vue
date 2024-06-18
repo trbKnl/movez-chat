@@ -10,11 +10,22 @@
           Try to find out who the imposter is!
         </div>
 			</p>
-			<img
-				src="/public/images/light-bulb.svg"
-				alt="Avatar"
-				class="w-16 h-16 mr-5 mt-2"
-			/>
+			<div class="relative">
+				<img
+					src="/public/images/light-bulb.svg"
+					alt="Avatar"
+					class="w-16 h-16 mt-3 light-bulb transition-opacity duration-300 opacity-40 hover:opacity-100"
+					@mouseenter="showTip"
+					@mouseleave="hideTip"
+				/>
+				<div
+					v-if="showTips"
+				class="absolute top-20 right-5 w-64 p-2 rounded-lg bg-gray-100 text-zinc-400 text-sm z-10 opacity-0 transition-opacity duration-300"
+               :class="{ 'opacity-80': showTips }"
+				>
+					{{ currentTip }}
+				</div>
+			</div>
 		</div>
 
 		<!-- Middle item that takes up the remaining space -->
@@ -77,7 +88,7 @@
 						ref="inputBox"
 						v-model="input"
 						placeholder="Type a message"
-						class="w-full h-full resize-none tracking-normal text-zinc-400 focus:outline-none bg-gray-100 custom-placeholder"
+						class="w-full h-full resize-none tracking-normal text-zinc-400  focus:outline-none bg-gray-100"
 						@keydown="handleKeydown"
 					/>
 				</form>
@@ -96,157 +107,182 @@ import DogIcon from "../../../public/images/dog.svg";
 import SlothIcon from "../../../public/images/sloth.svg";
 
 export default {
-	name: "MessagePanel",
-	emits: ["input"],
-	props: [
-    "players", 
-    "messages",
-    "playerRole",
-  ],
-	data() {
-		return {
-			input: "",
-		};
-	},
-	components: {
-		VuemojiPicker,
-	},
-	methods: {
-		onSubmit() {
-			if (this.isValid) {
-				this.$refs.dropdown.hide();
-				this.$emit("input", this.input);
-				this.input = "";
-			}
-		},
+  name: "MessagePanel",
+  emits: ["input"],
+  props: ["players", "messages", "playerRole"],
+  data() {
+    return {
+      input: "",
+      showTips: false,
+      currentTip: "",
+      imposterTips: [
+        "Keep It Simple: Don't make your answers too complicated. Stick to simple, believable statements that are easy to remember.",
+        "Blend In: Listen to what the others are saying and try to match their enthusiasm. If everyone else is excited about a certain sport, show some excitement too.",
+        "Avoid Extreme Statements: Don't say anything too extreme or controversial. Stick to average opinions that don't draw too much attention.",
+        "Stay Cool and Confident: Answer questions calmly and confidently. If you act nervous, they'll suspect you.",
+        "Use General Knowledge: Use general knowledge about the topic to build your story. For sports, mention well-known teams, popular events, or famous players.",
+        "Deflect and Redirect: If you're stuck, try to change the subject. For example, 'What do you think about that?' This buys you time and shifts focus.",
+        "Create a Backstory: Have a backstory ready for why you feel a certain way. For instance, 'I got into cricket because my older brother plays.'",
+        "Use Vague Answers: When you're unsure, give vague but believable answers. For example, 'I don't follow a specific team, I just enjoy watching good matches.'",
+      ],
+      playerTips: [
+        "Ask Specific Questions: Hit them with questions that need more than just a yes or no. Stuff like, 'What's the best football match you've seen?' or 'Who's your top player and why?' These are harder for the impostor to fake.",
+        "Notice the Details: Listen carefully to what they say. Real answers usually have specific details, while impostors might be vague or general.",
+        "Check for Consistency: During the chat, look for any changes in their story. Ask them to repeat or explain their answers at different times to catch them slipping up.",
+        "Follow-Up Questions: Based on what they say, ask more questions to dig deeper. For example, if they mention liking rugby, ask about their favourite team or a memorable match.",
+        "Create Scenarios: Make up scenarios related to the topic to see how they respond. For instance, 'If you could go to any sports event, which one would it be and why?'",
+        "Stay Chill and Open-Minded: Don't decide too quickly. Keep an open mind and consider all the possibilities before guessing the impostor.",
+      ],
+    };
+  },
+  components: {
+    VuemojiPicker,
+  },
+  methods: {
+    onSubmit() {
+      if (this.isValid) {
+        this.$refs.dropdown.hide();
+        this.$emit("input", this.input);
+        this.input = "";
+      }
+    },
 
-		handleEmojiClick(e) {
-			insertText(this.$refs.inputBox, e.unicode);
-		},
+    handleEmojiClick(e) {
+      insertText(this.$refs.inputBox, e.unicode);
+    },
 
-		handleKeydown(event) {
-			if (event.key === "Enter" && !event.shiftKey) {
-				event.preventDefault();
-				this.onSubmit();
-			}
-		},
+    handleKeydown(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        this.onSubmit();
+      }
+    },
 
-		handleKeyAnywhere(event) {
-			if (
-				event.target !== this.$refs.inputBox &&
-				!event.metaKey &&
-				!event.ctrlKey &&
-				!event.altKey
-			) {
-				event.preventDefault();
+    handleKeyAnywhere(event) {
+      if (
+        event.target !== this.$refs.inputBox &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
 
-				const textarea = this.$refs.inputBox;
-				textarea.focus();
+        const textarea = this.$refs.inputBox;
+        textarea.focus();
 
-				const key = event.key;
-				const isShiftPressed = event.shiftKey;
+        const key = event.key;
+        const isShiftPressed = event.shiftKey;
 
-				if (isShiftPressed && /^[a-zA-Z]$/.test(key)) {
-					const upperKey = key.toUpperCase();
-					const start = textarea.selectionStart;
-					const end = textarea.selectionEnd;
-					textarea.value =
-						textarea.value.slice(0, start) +
-						upperKey +
-						textarea.value.slice(end);
-					textarea.selectionStart = start + 1;
-					textarea.selectionEnd = start + 1;
-				} else if (key !== "Shift") {
-					// For other keys, simulate typing as before
-					const start = textarea.selectionStart;
-					const end = textarea.selectionEnd;
-					textarea.value =
-						textarea.value.slice(0, start) + key + textarea.value.slice(end);
-					textarea.selectionStart = start + 1;
-					textarea.selectionEnd = start + 1;
-				}
-			}
-		},
+        if (isShiftPressed && /^[a-zA-Z]$/.test(key)) {
+          const upperKey = key.toUpperCase();
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value =
+            textarea.value.slice(0, start) +
+            upperKey +
+            textarea.value.slice(end);
+          textarea.selectionStart = start + 1;
+          textarea.selectionEnd = start + 1;
+        } else if (key !== "Shift") {
+          // For other keys, simulate typing as before
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          textarea.value =
+            textarea.value.slice(0, start) + key + textarea.value.slice(end);
+          textarea.selectionStart = start + 1;
+          textarea.selectionEnd = start + 1;
+        }
+      }
+    },
 
-		displaySender(message, index) {
-			return (
-				index === 0 || this.messages[index - 1].fromSelf !== message.fromSelf
-			);
-		},
+    displaySender(message, index) {
+      return index === 0 || this.messages[index - 1].fromSelf !== message.fromSelf;
+    },
 
-		scrollToBottom() {
-			this.$nextTick(() => {
-				const container = this.$refs.messagesContainer;
-				container.scrollTop = container.scrollHeight;
-			});
-		},
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const container = this.$refs.messagesContainer;
+        container.scrollTop = container.scrollHeight;
+      });
+    },
 
-		getBackgroundColor(message) {
-			const player = this.players.find(
-				(player) => player.userId === message.fromUserId
-			);
-			if (player !== undefined) {
-				return PlayerColorMapping[player.color];
-			} else {
-				return "hidden";
-			}
-		},
+    getBackgroundColor(message) {
+      const player = this.players.find(
+        (player) => player.userId === message.fromUserId
+      );
+      if (player !== undefined) {
+        return PlayerColorMapping[player.color];
+      } else {
+        return "hidden";
+      }
+    },
 
-		getPlayerIcon(message) {
-			const player = this.players.find(
-				(player) => player.userId === message.fromUserId
-			);
-			if (player !== undefined) {
-				switch (player.color) {
-					case "Yellow":
-						return CatIcon;
-					case "Green":
-						return SlothIcon;
-					case "Blue":
-						return PandaIcon;
-					case "Red":
-						return DogIcon;
-					default:
-						return null;
-				}
-			} else {
-				return null;
-			}
-		},
+    getPlayerIcon(message) {
+      const player = this.players.find(
+        (player) => player.userId === message.fromUserId
+      );
+      if (player !== undefined) {
+        switch (player.color) {
+          case "Yellow":
+            return CatIcon;
+          case "Green":
+            return SlothIcon;
+          case "Blue":
+            return PandaIcon;
+          case "Red":
+            return DogIcon;
+          default:
+            return null;
+        }
+      } else {
+        return null;
+      }
+    },
 
-		getMessageClass(message) {
-			const bgColorClass = this.getBackgroundColor(message);
-			return {
-				[bgColorClass]: true,
-				"self-start ml-5": !message.fromSelf,
-				"self-end mr-5": message.fromSelf,
-				"text-white py-2 px-3 mt-3 rounded-lg max-w-max max-h-max p-10 m-1 shadow-lg": true,
-			};
-		},
-	},
+    getMessageClass(message) {
+      const bgColorClass = this.getBackgroundColor(message);
+      return {
+        [bgColorClass]: true,
+        "self-start ml-5": !message.fromSelf,
+        "self-end mr-5": message.fromSelf,
+        "text-white py-2 px-3 mt-3 rounded-lg max-w-max max-h-max p-10 m-1 shadow-lg": true,
+      };
+    },
 
-	computed: {
-		isValid() {
-			return this.input.trim().length > 0;
-		},
-	},
-	mounted() {
-		this.scrollToBottom();
-		this.$nextTick(() => {
-			this.$refs.inputBox.focus();
-		});
-		document.addEventListener("keydown", this.handleKeyAnywhere);
-	},
-	updated() {
-		this.scrollToBottom();
-	},
+    showTip() {
+      const tips = this.playerRole === "Imposter" ? this.imposterTips : this.playerTips;
+      this.currentTip = tips[Math.floor(Math.random() * tips.length)];
+      this.showTips = true;
+    },
+
+    hideTip() {
+      this.showTips = false;
+    },
+  },
+
+  computed: {
+    isValid() {
+      return this.input.trim().length > 0;
+    },
+  },
+
+  mounted() {
+    this.scrollToBottom();
+    this.$nextTick(() => {
+      this.$refs.inputBox.focus();
+    });
+    document.addEventListener("keydown", this.handleKeyAnywhere);
+  },
+
+  updated() {
+    this.scrollToBottom();
+  },
 };
 </script>
 
+
 <style scoped>
-.custom-placeholder::placeholder {
-	color: #e3dad8;
-}
+
 @font-face {
 	font-family: Fieldwork-Bold;
 	src: url("/public/fonts/Fieldwork16GeoBold.otf");
@@ -255,4 +291,5 @@ export default {
 p {
 	font-family: Fieldwork-Bold, Arial, Helvetica, sans-serif;
 }
+
 </style>

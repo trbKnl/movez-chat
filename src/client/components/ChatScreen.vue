@@ -1,33 +1,33 @@
 <template>
 	<div class="flex">
 		<div class="w-1/3 bg-movez-pale-pink">
-			<div class="p-3">
+			<div class="p-3 flex flex-col h-[96vh]">
 				<div class="flex items-center justify-between p-4 pb-1">
 					<h2 class="text-5xl font-bold text-movez-purple">Chat Room</h2>
 				</div>
 				<p class="flex items-center justify-between px-4 text-xl">
-          {{ roundIndicator }}
+					{{ roundIndicator }}
 				</p>
-				<hr />
+				<hr class="w-2/5 mt-2 ml-4 border-[1.5px] border-[rgb(160,156,156)]" />
 				<div v-for="(playerData, index) in playerDataArray" :key="index">
 					<div v-if="playerData !== undefined">
 						<PlayerCard :playerData="playerData" :gameTexts="gameTexts" />
 					</div>
 				</div>
 
-        <div class="flex flex-col h-[35px] mt-3 mt-16">
-          <ProgressBar
-            :key="roundIndicator"
-            :percentageComplete="chatRoundProgressValue"
-            :showTimerOnPercentageComplete="0"
-            :secondsLeft="secondsLeftInRound"
-          />
-        </div>
+				<div class="flex flex-col h-[35px] mt-auto">
+					<ProgressBar
+						:key="roundIndicator"
+						:percentageComplete="chatRoundProgressValue"
+						:showTimerOnPercentageComplete="0"
+						:secondsLeft="secondsLeftInRound"
+					/>
+				</div>
 			</div>
 		</div>
 		<div class="w-2/3 bg-white">
 			<message-panel
-        :playerRole="playerRole"
+				:playerRole="playerRole"
 				:players="playerDataArray"
 				:messages="messageData"
 				@input="onMessage"
@@ -40,7 +40,7 @@
 // CODE NOT COMPLETELY IN TYPESCRIPT
 
 import socket from "../socket";
-import { PropType } from 'vue'
+import { PropType } from "vue";
 
 import PlayerCard from "./PlayerCard.vue";
 import MessagePanel from "./MessagePanel.vue";
@@ -67,15 +67,15 @@ export default {
 			type: Array as () => Message[],
 			default: [],
 		},
-    roundIndicator: {
-      type: String,
-    },
-    gameTexts: {
-      type: Object as PropType<GameTexts>,
-    },
-    playerRole: {
-      type: String,
-    },
+		roundIndicator: {
+			type: String,
+		},
+		gameTexts: {
+			type: Object as PropType<GameTexts>,
+		},
+		playerRole: {
+			type: String,
+		},
 	},
 	watch: {
 		playerDataArray() {
@@ -88,7 +88,7 @@ export default {
 	},
 	data(): {
 		chatRoundProgressValue: number;
-    secondsLeftInRound: number;
+		secondsLeftInRound: number;
 		playerColorMapping: Record<PlayerColor, string>;
 		playerConnected: boolean;
 		messageData: Message[];
@@ -96,7 +96,7 @@ export default {
 		return {
 			playerColorMapping: PlayerColorMapping,
 			chatRoundProgressValue: 0, // progress bar data
-			secondsLeftInRound: -1,    // progress bar data
+			secondsLeftInRound: -1, // progress bar data
 			playerConnected: true,
 			messageData: [],
 		};
@@ -150,10 +150,13 @@ export default {
 			this.messageData.push({ content, fromUserId, toUserId, fromSelf });
 		});
 
-    socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
-			this.chatRoundProgressValue = percentageComplete;
-			this.secondsLeftInRound = secondsLeft;
-		});
+		socket.on(
+			"game state progress update",
+			({ percentageComplete, secondsLeft }) => {
+				this.chatRoundProgressValue = percentageComplete;
+				this.secondsLeftInRound = secondsLeft;
+			}
+		);
 
 		socket.on("disconnect", () => {
 			this.playerConnected = false;
@@ -170,11 +173,5 @@ export default {
 
 h2 {
 	font-family: Fieldwork-Bold, Arial, Helvetica, sans-serif;
-}
-hr {
-	width: 40%;
-	margin-top: 10px;
-	margin-left: 15px;
-	border: 1.5px solid rgb(160, 156, 156);
 }
 </style>
