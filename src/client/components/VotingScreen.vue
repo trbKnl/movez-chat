@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="fixed top-0 left-0 w-full h-full flex justify-center bg-white mt-10 pt-10 z-50"
+		class="fixed top-0 left-0 w-full h-full flex justify-center bg-white items-center z-50"
 	>
 		<div class="absolute w-full h-full bg-white"></div>
 		<div class="z-50 text-center">
@@ -15,7 +15,7 @@
 					<h1 class="font-bold text-5xl text-movez-purple">
 						THE OTHERS ARE BUSY VOTING.
 					</h1>
-					<div class="mt-5 mb-2 gif-container">
+					<div class="mt-5 mb-2 gif-container relative">
 						<iframe
 							src="https://giphy.com/embed/j4fbBhYgu8mNEHkQ4w"
 							width="480"
@@ -25,7 +25,7 @@
 							class="giphy-embed"
 							allowFullScreen
 						></iframe>
-						<div class="overlay"></div>
+						<div class="overlay absolute top-0 left-0 w-full h-full"></div>
 					</div>
 
 					<p class="text-4xl">HERE IS A FUNNY GIF FOR YOU ;)</p>
@@ -38,7 +38,10 @@
 					<div
 						v-for="(color, index) in playerColorsNotYourOwn"
 						:key="index"
-						class="flex justify-center mt-10 wrapper border-4 border-transparent hover:border-movez-purple cursor-pointer"
+						:class="[
+							'flex justify-center mt-10 wrapper border-4 border-transparent hover:border-movez-purple cursor-pointer',
+							{ 'bg-[#6e0069] text-white': chosenImposter === color },
+						]"
 						@click="(event) => handleClick(event, color)"
 					>
 						<img :src="iconMapping[color]" :alt="color" class="w-20" />
@@ -53,12 +56,12 @@
 				</div>
 
 				<div class="flex flex-col h-[35px] w-[350px] mt-5">
-          <ProgressBar 
-            :key="playerColor"
-            :percentageComplete="progressBarValue" 
-            :showTimerOnPercentageComplete="0" 
-            :secondsLeft="secondsLeftInRound"
-          />
+					<ProgressBar
+						:key="playerColor"
+						:percentageComplete="progressBarValue"
+						:showTimerOnPercentageComplete="0"
+						:secondsLeft="secondsLeftInRound"
+					/>
 				</div>
 			</div>
 		</div>
@@ -99,10 +102,13 @@ export default {
 		},
 	},
 	created() {
-    socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
-			this.progressBarValue = percentageComplete;
-			this.secondsLeftInRound = secondsLeft;
-		});
+		socket.on(
+			"game state progress update",
+			({ percentageComplete, secondsLeft }) => {
+				this.progressBarValue = percentageComplete;
+				this.secondsLeftInRound = secondsLeft;
+			}
+		);
 	},
 	methods: {
 		toggleMenu() {
@@ -115,12 +121,7 @@ export default {
 		},
 
 		handleClick(event, color) {
-      this.setImposterChoice(color)
-			if (this.clickedElement) {
-				this.clickedElement.classList.remove("clicked");
-			}
-			this.clickedElement = event.currentTarget;
-			this.clickedElement.classList.add("clicked");
+			this.setImposterChoice(color);
 		},
 	},
 };
@@ -133,21 +134,5 @@ export default {
 }
 h1 {
 	font-family: Fieldwork-Fat, sans-serif;
-}
-.gif-container {
-	position: relative;
-}
-
-.overlay {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-}
-
-.clicked {
-	background-color: #6e0069;
-	color: white;
 }
 </style>
