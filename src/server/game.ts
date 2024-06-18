@@ -161,21 +161,21 @@ export class Game {
     switch (this.gameState) {
       case "choose topic":
         this.showChooseTopicScreenForAll(io)
-        await this.sleepAndUpdateProgress(io, 1) // 100s
+        await this.sleepAndUpdateProgress(io, 25) // 100s
         await this.assignImposter(playerDataStore)
         break;
       case "overview":
         this.showOverviewScreenForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 1) // 60s
+        await this.sleepAndUpdateProgress(io, 25) // 60s
         break;
       case "group chat":
         await this.showGroupChatForAll(io, playerDataStore)
-        await this.sleepAndUpdateProgress(io, 100) // 60s
+        await this.sleepAndUpdateProgress(io, 30) // 60s
         break;
       case "chat":
         while (this.currentRound < 3) {
           await this.showChatScreenForAll(io, messageStore, playerDataStore)
-          await this.sleepAndUpdateProgress(io, 100) // 3*60s
+          await this.sleepAndUpdateProgress(io, 15) // 3*60s
           this.nextRound()
           this.save(gameStore)
         }
