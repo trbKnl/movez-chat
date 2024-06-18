@@ -9,7 +9,11 @@
 				v-if="currentScreen == 'AssignmentScreen'"
 			>
 				<div class="flex items-center justify-center">
-					<img :src="getPlayerIcon(playerColor)" alt="animal" class="w-28" />
+					<img
+						:src="getPlayerIcon(playerColor)"
+						alt="animal"
+						class="w-[120px]"
+					/>
 					<h1 class="font-bold text-6xl mx-8 text-movez-purple">
 						You are the {{ playerColor }} Player
 					</h1>
@@ -19,9 +23,9 @@
 				</h2>
 				<button
 					@click="handleButtonClick"
-					class="text-white font-bold py-2 px-4 rounded"
+					class="text-white font-bold py-1.5 px-10 text-[17px] rounded mt-7"
 					:class="{
-						'bg-blue-500 hover:bg-blue-700': isButtonActive,
+						'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
 						'bg-gray-300 cursor-not-allowed': !isButtonActive,
 					}"
 					:disabled="!isButtonActive"
@@ -35,7 +39,7 @@
 				v-else-if="currentScreen == 'LikeScreen'"
 			>
 				<h1 class="font-bold text-6xl mx-8 text-movez-purple">
-          {{ gameTexts.topicAssignment }}
+					{{ gameTexts.topicAssignment }}
 				</h1>
 				<h2 class="text-black text-3xl font-thin text-center mt-5 mb-5">
 					{{ gameTexts.topicQuestion }}
@@ -47,9 +51,9 @@
 				</p>
 				<button
 					@click="handleButtonClick"
-					class="text-white font-bold py-2 px-4 rounded"
+					class="text-white font-bold py-1.5 text-[17px] px-10 rounded mt-5"
 					:class="{
-						'bg-blue-500 hover:bg-blue-700': isButtonActive,
+						'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
 						'bg-gray-300 cursor-not-allowed': !isButtonActive,
 					}"
 					:disabled="!isButtonActive"
@@ -72,9 +76,9 @@
 				</p>
 				<button
 					@click="handleButtonClick"
-					class="text-white font-bold py-2 px-4 rounded mt-3"
+					class="text-white font-bold py-1.5 text-[17px] px-10 rounded mt-5"
 					:class="{
-						'bg-blue-500 hover:bg-blue-700': isButtonActive,
+						'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
 						'bg-gray-300 cursor-not-allowed': !isButtonActive,
 					}"
 					:disabled="!isButtonActive"
@@ -84,17 +88,17 @@
 			</div>
 
 			<div v-else>
-				<p class="font-bold text-4xl mb-5 text-movez-purple">
+				<h2 class="text-5xl text-movez-purple mb-[10px]">
 					Waiting for the other players to finish
-				</p>
+				</h2>
 			</div>
 
-			<div class="flex flex-col w-[350px] h-[35px] mt-7">
-				<ProgressBar 
-          :percentageComplete="progressBarValue" 
-          :showTimerOnPercentageComplete="0" 
-          :secondsLeft="secondsLeftInRound"
-        />
+			<div class="flex flex-col w-[350px] h-[35px] mt-10">
+				<ProgressBar
+					:percentageComplete="progressBarValue"
+					:showTimerOnPercentageComplete="0"
+					:secondsLeft="secondsLeftInRound"
+				/>
 			</div>
 		</div>
 	</div>
@@ -132,15 +136,15 @@ export default {
 			},
 		};
 	},
-	props: [
-    "playerColor", 
-    "gameTexts"
-  ],
+	props: ["playerColor", "gameTexts"],
 	created() {
-    socket.on("game state progress update", ({ percentageComplete, secondsLeft }) => {
-			this.progressBarValue = percentageComplete
-      this.secondsLeftInRound = secondsLeft
-		});
+		socket.on(
+			"game state progress update",
+			({ percentageComplete, secondsLeft }) => {
+				this.progressBarValue = percentageComplete;
+				this.secondsLeftInRound = secondsLeft;
+			}
+		);
 	},
 	methods: {
 		getPlayerIcon(color) {

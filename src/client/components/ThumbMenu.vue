@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-row ">
     <ThumbIcon 
-      class="w-16 h-16 cursor-pointer hover:bg-gray-200 rounded-lg"
-      :class="{ 'fill-sky-500': showThumbUp }"
+      class="w-16 h-16 cursor-pointer hover:bg-gray-200 rounded-lg mx-5"
+      :class="{ 'fill-movez-purple': showThumbUp }"
       @click="clickUp"
     />
     <ThumbIcon 
       class="w-16 h-16 cursor-pointer hover:bg-gray-200 rounded-lg rotate-180"
-      :class="{ 'fill-sky-500': showThumbDown }"
+      :class="{ 'fill-movez-purple': showThumbDown }"
       @click="clickDown"
     />
   </div>
