@@ -223,13 +223,13 @@ export default {
       );
       if (player !== undefined) {
         switch (player.color) {
-          case "Yellow":
+          case "Fluffy Cat":
             return CatIcon;
-          case "Green":
+          case "Dreamy Sloth":
             return SlothIcon;
-          case "Blue":
+          case "Funky Panda":
             return PandaIcon;
-          case "Red":
+          case "Bouncy Dog":
             return DogIcon;
           default:
             return null;

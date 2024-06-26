@@ -32,20 +32,23 @@
 				</div>
 
 				<div v-else>
-					<h1 class="font-bold text-5xl text-movez-purple">
+					<h1 class="font-bold text-5xl text-center text-movez-purple">
 						GUESS THE IMPOSTER?
 					</h1>
 					<div
 						v-for="(color, index) in playerColorsNotYourOwn"
 						:key="index"
 						:class="[
-							'flex justify-center mt-10 wrapper border-4 border-transparent hover:border-movez-purple cursor-pointer',
+							'flex justify-center items-center mt-10 wrapper ml-[3rem] mr-[3rem] border-4 border-transparent hover:border-movez-purple cursor-pointer',
 							{ 'bg-[#6e0069] text-white': chosenImposter === color },
 						]"
 						@click="(event) => handleClick(event, color)"
 					>
-						<img :src="iconMapping[color]" :alt="color" class="w-20" />
-						<p class="text-5xl flex items-center justify-center mx-9">
+						<div class="flex justify-center items-center flex-2">
+							<img :src="iconMapping[color]" :alt="color" class="w-20" />
+						</div>
+
+						<p class="text-5xl flex justify-center items-center flex-1">
 							{{ color }}
 						</p>
 					</div>
@@ -88,10 +91,10 @@ export default {
 			progressBarValue: 0,
 			secondsLeftInRound: -1,
 			iconMapping: {
-				Yellow: CatIcon,
-				Green: SlothIcon,
-				Blue: PandaIcon,
-				Red: DogIcon,
+				"Fluffy Cat": CatIcon,
+				"Dreamy Sloth": SlothIcon,
+				"Funky Panda": PandaIcon,
+				"Bouncy Dog": DogIcon,
 			},
 		};
 	},

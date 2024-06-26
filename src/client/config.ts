@@ -1,9 +1,9 @@
 import type { PlayerColor } from '../server/game.ts'
 
 export const PlayerColorMapping: Record<PlayerColor, string> = {
-  "Yellow": "bg-yellow-500",
-  "Green": "bg-lime-500",
-  "Blue": "bg-sky-500",
-  "Red": "bg-rose-500"
+  "Fluffy Cat": "bg-yellow-500",
+  "Dreamy Sloth": "bg-lime-500",
+  "Funky Panda": "bg-sky-500",
+  "Bouncy Dog": "bg-rose-500"
 }
 

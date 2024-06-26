@@ -7,20 +7,20 @@
 			<div class="flex flex-col items-center justify-center">
 				<h2 class="mb-2 text-6xl">Your role is</h2>
 				<h1 class="mb-2 font-bold text-7xl mt-10">{{ playerRole }}</h1>
-				<img :src="playerIcon" alt="player icon" class="mt-10" />
+				<img :src="playerIcon" alt="player icon" class="mt-10 w-[250px]" />
 				<div
 					class="player-role text-4xl font-bold mt-10 text-center"
 					v-if="playerRole === 'Imposter'"
 				>
-          <div v-if="likeTopic === 'like'">
-            {{ gameTexts.overviewImposterAssignmentLike }}
-          </div>
-          <div v-else>
-            {{ gameTexts.overviewImposterAssignmentDislike }}
-          </div>
+					<div v-if="likeTopic === 'like'" >
+						{{ gameTexts.overviewImposterAssignmentLike }}
+					</div>
+					<div v-else>
+						{{ gameTexts.overviewImposterAssignmentDislike }}
+					</div>
 				</div>
 				<div v-else class="player-role text-4xl font-bold mt-10 text-center">
-          {{ gameTexts.overviewPlayerAssignment }}
+					{{ gameTexts.overviewPlayerAssignment }}
 				</div>
 			</div>
 		</div>
@@ -34,19 +34,14 @@ import DogIcon from "../../../public/images/dog.svg";
 import SlothIcon from "../../../public/images/sloth.svg";
 
 export default {
-	props: [
-    "playerColor", 
-    "playerRole", 
-    "likeTopic",
-    "gameTexts",
-  ],
+	props: ["playerColor", "playerRole", "likeTopic", "gameTexts"],
 	data() {
 		return {
 			iconMapping: {
-				Yellow: CatIcon,
-				Green: SlothIcon,
-				Blue: PandaIcon,
-				Red: DogIcon,
+				'Fluffy Cat': CatIcon,
+				'Dreamy Sloth': SlothIcon,
+				'Funky Panda': PandaIcon,
+				'Bouncy Dog': DogIcon,
 			},
 		};
 	},
@@ -72,8 +67,5 @@ h1 {
 }
 .player-role {
 	font-family: Fieldwork-Bold, Arial, Helvetica, sans-serif;
-}
-img {
-	width: 250px;
 }
 </style>

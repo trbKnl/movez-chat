@@ -62,10 +62,10 @@ export default {
 		return {
 			playerColorMapping: PlayerColorMapping,
 			iconMapping: {
-				Yellow: CatIcon,
-				Green: SlothIcon,
-				Blue: PandaIcon,
-				Red: DogIcon,
+				'Fluffy Cat': CatIcon,
+				'Dreamy Sloth': SlothIcon,
+				'Funky Panda': PandaIcon,
+				'Bouncy Dog': DogIcon,
 			},
 		};
 	},

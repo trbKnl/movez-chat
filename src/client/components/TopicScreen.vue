@@ -14,8 +14,8 @@
 						alt="animal"
 						class="w-[120px]"
 					/>
-					<h1 class="font-bold text-6xl mx-8 text-movez-purple">
-						You are the {{ playerColor }} Player
+					<h1 class="font-bold text-7xl mx-8 text-movez-purple">
+						You are the {{ playerColor }} 
 					</h1>
 				</div>
 				<h2 class="text-black text-2xl font-thin text-center">
@@ -129,10 +129,10 @@ export default {
 			screens: ["AssignmentScreen", "LikeScreen", "ImposterScreen", "Waiting"],
 			isButtonActive: true,
 			iconMapping: {
-				Yellow: CatIcon,
-				Green: SlothIcon,
-				Blue: PandaIcon,
-				Red: DogIcon,
+				"Fluffy Cat": CatIcon,
+				"Dreamy Sloth": SlothIcon,
+				"Funky Panda": PandaIcon,
+				"Bouncy Dog": DogIcon,
 			},
 		};
 	},

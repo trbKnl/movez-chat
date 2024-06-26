@@ -16,8 +16,7 @@
 								class="absolute left-[-100px] bottom-[140px] w-[200px]"
 							/>
 							<p class="lose">
-								Uh-Uh: The investigators caught you! The investigators
-								win!
+								Uh-Uh: The investigators caught you! The investigators win!
 							</p>
 						</div>
 						<div v-else class="relative">
@@ -27,7 +26,7 @@
 								class="absolute left-[-140px] bottom-[130px] w-[200px]"
 							/>
 							<Confetti />
-							<p>Well done Imposter,  you tricked them all!</p>
+							<p>Well done Imposter, you tricked them all!</p>
 							<p>You win!</p>
 						</div>
 					</div>
@@ -55,7 +54,7 @@
 								alt="Imposter Avatar"
 								class="w-[130px] mx-auto mt-4"
 							/>
-							<p>The Imposter won!</p>
+							<p>Better luck next time!</p>
 						</div>
 					</div>
 				</div>
@@ -92,10 +91,10 @@ export default {
 		return {
 			showThankYou: false,
 			iconMapping: {
-				Yellow: CatIcon,
-				Green: SlothIcon,
-				Blue: PandaIcon,
-				Red: DogIcon,
+				"Fluffy Cat": CatIcon,
+				"Dreamy Sloth": SlothIcon,
+				"Funky Panda": PandaIcon,
+				"Bouncy Dog": DogIcon,
 			},
 		};
 	},
@@ -113,7 +112,6 @@ export default {
 			return this.iconMapping[this.imposterColor] || "";
 		},
 		investigatorsCaught() {
-			
 			return this.playerColors.filter((color) => this.playerWon[color]);
 		},
 	},
@@ -122,10 +120,10 @@ export default {
 			this.showThankYou = true;
 		},
 		mounted() {
-		// Debugging logs to check the values
-		console.log("playerScore:", this.playerScore);
-		console.log("investigatorsCaught:", this.investigatorsCaught);
-	},
+			// Debugging logs to check the values
+			console.log("playerScore:", this.playerScore);
+			console.log("investigatorsCaught:", this.investigatorsCaught);
+		},
 	},
 };
 </script>
