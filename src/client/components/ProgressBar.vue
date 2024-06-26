@@ -1,6 +1,6 @@
 <template>
 	<div v-if="isStatic" class="flex-1">
-		<div class="progress">
+		<div :class="['progress']" :style="dynamicStyles">
 			<div
 				class="staticbar"
 				:style="{
@@ -10,7 +10,7 @@
 		</div>
 	</div>
 	<div v-else class="flex-1">
-		<div class="progress">
+		<div :class="['progress']" :style="dynamicStyles">
 			<div
 				class="bar"
 				:class="barColorClass"
@@ -30,7 +30,6 @@
 		</div>
 	</div>
 </template>
-
 <script>
 export default {
 	name: "ProgressBar",
@@ -66,6 +65,30 @@ export default {
 			barColorClass: "green-bar",
 		};
 	},
+	computed: {
+		dynamicStyles() {
+			let boxShadow, border;
+			switch (this.barColorClass) {
+				case "red-bar":
+					boxShadow = "0 0 3px #ff5e5b";
+					border = "1px solid #ff5e5b";
+					break;
+				case "yellow-bar":
+					boxShadow = "0 0 3px #ffed66";
+					border = "1px solid #ffed66";
+					break;
+				case "green-bar":
+				default:
+					boxShadow = "0 0 3px #00cecb";
+					border = "1px solid #00cecb";
+					break;
+			}
+			return {
+				boxShadow,
+				border,
+			};
+		},
+	},
 	watch: {
 		percentageComplete(val) {
 			if (
@@ -77,7 +100,6 @@ export default {
 				this.isTimerRunning = true;
 				this.updateBarColor(val);
 			}
-			
 		},
 		secondsToDisplay(val) {
 			if (val === 0) {
@@ -118,15 +140,12 @@ export default {
 	},
 };
 </script>
-
 <style>
 .progress {
 	width: 100%;
 	height: 100%;
 	border-radius: 4px;
-	border: 1px solid #00d2c8;
 	padding: 7px 5px;
-	box-shadow: 0 0 10px #00d2c8;
 }
 
 .progress .bar {
@@ -134,43 +153,41 @@ export default {
 	height: 100%;
 	background: repeating-linear-gradient(
 		135deg,
-		#00d2c8,
-		#00d2c8 10px,
-		#fff 10px,
-		#fff 20px
+		#00cecb,
+		#00cecb 10px,
+		#ffffff00 10px,
+		#ffffff00 20px
 	);
-	background: 0 0 10px 4px #00d2c8;
 }
+
 .progress .green-bar {
 	background: repeating-linear-gradient(
 		135deg,
-		#00d2c8,
-		#00d2c8 10px,
-		#fff 10px,
-		#fff 20px
+		#00cecb,
+		#00cecb 10px,
+		#ffffff00 10px,
+		#ffffff00 20px
 	);
 }
 
 .progress .yellow-bar {
 	background: repeating-linear-gradient(
 		135deg,
-		yellow,
-		yellow 10px,
-		#fff 10px,
-		#fff 20px
+		#ffed66,
+		#ffed66 10px,
+		#ffffff00 10px,
+		#ffffff00 20px
 	);
-	
 }
 
 .progress .red-bar {
 	background: repeating-linear-gradient(
 		135deg,
-		red,
-		red 10px,
-		#fff 10px,
-		#fff 20px
+		#ff5e5b,
+		#ff5e5b 10px,
+		#ffffff00 10px,
+		#ffffff00 20px
 	);
-	
 }
 
 .progress .staticbar {
@@ -178,12 +195,11 @@ export default {
 	height: 100%;
 	background: repeating-linear-gradient(
 		135deg,
-		#00d2c8,
-		#00d2c8 10px,
-		#fff 10px,
-		#fff 20px
+		#00cecb,
+		#00cecb 10px,
+		#ffffff00 10px,
+		#ffffff00 20px
 	);
-	background: 0 0 10px 4px #00d2c8;
 	transition: width 1s ease-in-out;
 	animation: initial-animation 1s forwards, cyclic-animation 5s infinite 1s;
 }
