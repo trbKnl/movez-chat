@@ -1,43 +1,51 @@
 <template>
 	<div
-		class="flex mt-3 p-5 items-center"
-		:class="{ 'bg-movez-purple text-white': playerData.isCurrentPlayer }"
+	  class="flex mt-3 p-5 items-center"
+	  :class="{ 'bg-movez-purple text-white': playerData.isCurrentPlayer }"
 	>
-		<img :src="getPlayerIcon(playerData.color)" class="w-20 h-20" />
-		<p class="text-2xl ml-10">
-      <div v-if="playerData.isCurrentPlayer">
-        <div v-if="playerData.playerRole === 'Imposter'">
-          <div v-if="playerData.likeTopic === 'like'">
-            {{ gameTexts.chatScreenYouLike }}. <br />
-            {{ gameTexts.overviewImposterAssignmentLike }}
-          </div>
-          <div v-else>
-            {{ gameTexts.chatScreenYouDislike }} <br />
-            {{ gameTexts.overviewImposterAssignmentDislike }}
-          </div>
-        </div>
-        <div v-else>
-          <div v-if="playerData.likeTopic === 'like'">
-            {{ gameTexts.chatScreenYouLike }}
-          </div>
-          <div v-else>
-            {{ gameTexts.chatScreenYouDislike }}
-          </div>
-        </div>
-
-      </div>
-      <div v-else>
-        <div v-if="playerData.likeTopic === 'like'">
-          {{ gameTexts.chatScreenPlayerLike.replace(/<PLAYER>/g, playerData.color) }}
-        </div>
-        <div v-else>
-          {{ gameTexts.chatScreenPlayerDislike.replace(/<PLAYER>/g, playerData.color) }}
-        </div>
-      </div>
-    </p>
+	  <img :src="getPlayerIcon(playerData.color)" class="w-20 h-20" />
+	  <p class="text-2xl ml-10">
+		<div v-if="playerData.isCurrentPlayer">
+		  <div v-if="playerData.playerRole === 'Imposter'">
+			<div v-if="playerData.likeTopic === 'like'">
+			  {{ gameTexts.chatScreenYouLike }}. <br />
+			  {{ gameTexts.overviewImposterAssignmentLike }}
+			</div>
+			<div v-else>
+			  {{ gameTexts.chatScreenYouDislike }} <br />
+			  {{ gameTexts.overviewImposterAssignmentDislike }}
+			</div>
+		  </div>
+		  <div v-else>
+			<div v-if="playerData.likeTopic === 'like'">
+			  {{ gameTexts.chatScreenYouLike }}
+			</div>
+			<div v-else>
+			  {{ gameTexts.chatScreenYouDislike }}
+			</div>
+		  </div>
+		</div>
+		<div v-else>
+	  <div v-if="playerData.playerRole === 'Imposter'">
+		  <div v-if="playerData.likeTopic === 'like'">
+			{{ gameTexts.chatScreenPlayerDislike.replace(/<PLAYER>/g, playerData.color) }}
+		  </div>
+		  <div v-else>
+			{{ gameTexts.chatScreenPlayerLike.replace(/<PLAYER>/g, playerData.color) }}
+		  </div>
+		</div>
+		<div v-else>
+		  <div v-if="playerData.likeTopic === 'like'">
+			{{ gameTexts.chatScreenPlayerLike.replace(/<PLAYER>/g, playerData.color) }}
+		  </div>
+		  <div v-else>
+			{{ gameTexts.chatScreenPlayerDislike.replace(/<PLAYER>/g, playerData.color) }}
+		  </div>
+		</div>
+		</div>
+	  </p>
 	</div>
 </template>
-
 <script>
 import StatusIcon from "./StatusIcon.vue";
 import { PlayerColorMapping } from "../config";
