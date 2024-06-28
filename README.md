@@ -1,27 +1,57 @@
 # Movez Chat
 
 This repository contains a chat application used by the [Movez project](https://www.eur.nl/essb/informatie-voor/onderzoekers/movez-lab/onderzoekers).
+Movez Chat is a 4-player chat game where one player is an imposter. The other players must guess who the imposter is through conversation.
 
-## Implementation details
+This game can be administered as an experiment to participants. Chat data for the game can be collected and analysed for various research goals
 
-This project contains a chat application that uses Express, Vue.js, Vite and socket.io. This project has been created using [vite-express](https://github.com/szymmis/vite-express).
-The client and server are based on this [example](https://socket.io/get-started/private-messaging-part-4/) from socket.io.
+## Installation Instructions
 
+To install and run the application, follow these steps:
 
-## Start the server
+1. **Clone the repository**:
+    ```
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
+
+2. **Install dependencies**:
+    ```
+    npm install
+    ```
+
+3. **Start Redis for cache and session management**:
+    ```
+    docker run --rm -p 6379:6379 redis:7
+    ```
+
+4. **Start the development server**:
+    ```
+    npm run dev
+    ```
+
+## Joining the game 
+
+Players can join a game using the endpoint:
 
 ```
-# start redis cache and session management
-docker run --rm -p 6379:6379 redis:7
-
-# start the development server
-npm run dev
+/chat/<participant_id>
 ```
 
-## Join a chatroom with a username
+Replace `<participant_id>` with a unique participant id. The game will star as soon as 4 unique players have joined.
 
-```
-http://localhost:3000/chat/my_room/my_username
-```
 
-After initial login your session is stored, upon next login the room id and username are loaded from the session
+## Deployment 
+
+### Research cloud 
+
+Playbooks have been provided to deploy on [Surf research cloud](https://www.surf.nl/en/services/surf-research-cloud).
+
+### Other platforms
+
+Deployment should be fairly straightforward. 
+
+Note:
+
+* During deployment a `.env` should be created where a variable `VITE_DOMAIN` gets set to the domain that points to the server (`VITE_DOMAIN` is a variable that is read by the client side code, telling the client the location of the socket.io server).
+* The the actual storage of the data is only provided for when deploying on research cloud. If this app is deployed on other platforms, code needs to be added that facilitiates 
