@@ -46,15 +46,16 @@ Replace `<participant_id>` with a unique participant id. The game will star as s
 ### Research cloud 
 
 Playbooks have been provided to deploy on [Surf research cloud](https://www.surf.nl/en/services/surf-research-cloud). See the `researchcloud_deployment` folder.
+In this deployment the the app runs in docker containers on a single VM with Docker compose.
 
 ### Other platforms
 
-Deployment should be fairly straightforward on major cloud platforms.
+Deployment should be fairly straightforward on platforms have support container workloads, for example, Azure app services, Kubernetes etc.
 
 Note:
 
-* During deployment a `.env` should be created where a variable `VITE_DOMAIN` gets set to the domain that points to the server (`VITE_DOMAIN` is a variable that is read by the client side code, telling the client the location of the socket.io server).
-* The the actual storage of the data is only provided for when deploying on research cloud. If this app is deployed on other platforms, code needs to be added that facilitiates the storage of data
+* During deployment a `.env` should be created where a variable `VITE_DOMAIN` gets set to the domain that points to the server (`VITE_DOMAIN` is a variable that is read by the client side code, telling the client the location of the socket.io server). See the playbook for the details.
+* The the actual storage of the data is only provided for when deploying on research cloud. If this app is deployed on other platforms, code needs to be added that facilitiates the storage of data!
 
 ## Docker 
 
