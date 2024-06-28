@@ -5,7 +5,7 @@ Movez Chat is a 4-player chat game where one player is an imposter. The other pl
 
 This game can be administered as an experiment to participants. Chat data for the game can be collected and analysed for various research goals
 
-## Installation Instructions
+## Installation instructions for development
 
 To install and run the application, follow these steps:
 
@@ -41,17 +41,27 @@ Players can join a game using the endpoint:
 Replace `<participant_id>` with a unique participant id. The game will star as soon as 4 unique players have joined.
 
 
-## Deployment 
+## Deployment for production
 
 ### Research cloud 
 
-Playbooks have been provided to deploy on [Surf research cloud](https://www.surf.nl/en/services/surf-research-cloud).
+Playbooks have been provided to deploy on [Surf research cloud](https://www.surf.nl/en/services/surf-research-cloud). See the `researchcloud_deployment` folder.
 
 ### Other platforms
 
-Deployment should be fairly straightforward. 
+Deployment should be fairly straightforward on major cloud platforms.
 
 Note:
 
 * During deployment a `.env` should be created where a variable `VITE_DOMAIN` gets set to the domain that points to the server (`VITE_DOMAIN` is a variable that is read by the client side code, telling the client the location of the socket.io server).
-* The the actual storage of the data is only provided for when deploying on research cloud. If this app is deployed on other platforms, code needs to be added that facilitiates 
+* The the actual storage of the data is only provided for when deploying on research cloud. If this app is deployed on other platforms, code needs to be added that facilitiates the storage of data
+
+## Docker 
+
+You can run this app using docker compose
+
+```
+docker compose build
+docker compose up
+```
+
