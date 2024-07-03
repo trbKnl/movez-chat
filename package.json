@@ -12,6 +12,7 @@
     "@floating-ui/vue": "^1.0.6",
     "@msgpack/msgpack": "^3.0.0-beta2",
     "bullmq": "^5.4.6",
+    "cookie-session": "^2.1.0",
     "express": "^4.19.2",
     "floating-vue": "^5.2.2",
     "insert-text-at-cursor": "^0.3.0",

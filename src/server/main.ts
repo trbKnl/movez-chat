@@ -3,7 +3,7 @@ import http from 'http'
 import { Server } from "socket.io"
 import { Redis } from "ioredis"
 import ViteExpress from "vite-express"
-import session from "express-session"
+import session from "cookie-session"
 import crypto from "crypto"
 import { Worker, Queue } from "bullmq"
 
@@ -68,6 +68,7 @@ if (environment === 'development') {
     console.log('Running in development mode')
     chatAppUrl = "/../../chat.html"
 } else if (environment === 'production') {
+    console.log('Running in production mode')
     chatAppUrl = "/../../dist/chat.html"
     app.use(express.static(__dirname + '/../../dist/assets'))
 } else {
@@ -293,7 +294,7 @@ async function gameLoop(players: Player[]) {
 
     // Create a game
     let gameId = randomId()
-    let game  = new Game(gameId, players)
+    let game = new Game(gameId, players)
 
     game.registerGame(sessionStore)
     await game.play(io, gameStore, messageStore, playerDataStore)

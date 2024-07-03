@@ -64,14 +64,9 @@
         state: touch
         mode: "o+r"
 
-    - name: Write .env file in the root of movez chat
-      lineinfile:
-        path: ./movez-chat/.env
-        line: VITE_DOMAIN="{{ domain_name }}"
-
-    - name: Build Next with Docker build
+    - name: Build with Docker build
       shell:
-        cmd: docker build . -t movez-chat:latest
+        cmd: docker build . --build-args="DOMAIN_NAME={{ domain_name }}" -t movez-chat:latest
         chdir: ./movez-chat
 
     - name: Create Docker Compose file

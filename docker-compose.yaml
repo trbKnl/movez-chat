@@ -1,17 +1,35 @@
-version: '3.9'
-
 services:
   movez-chat:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DOMAIN_NAME: http://localhost:3000
     environment:
       - REDIS_HOST=redis-db
       - REDIS_PORT=6379
     ports:
       - "3000:3000"
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: movez-chat
 
   redis-db:
     image: redis:latest
+    command: [sh, -c, "rm -f /data/dump.rdb && redis-server"]
     ports:
       - "6379:6379"
+
+  fluentd:
+    image: fluentd:latest
+    ports:
+      - "24224:24224"
+    volumes:
+      - fluentd-storage:/fluentd/log
+    environment:
+      - FLUENTD_ARGS=--no-supervisor -q
+
+volumes:
+  fluentd-storage:

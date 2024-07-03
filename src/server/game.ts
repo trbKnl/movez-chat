@@ -125,7 +125,7 @@ export class Game {
 	constructor(
 		gameId: string,
 		players: Player[],
-		imposter: number | null,
+		imposter: number | null = null,
 		currentRound = 0,
 		gameState: GameState = "choose topic"
 	) {
@@ -509,7 +509,7 @@ export class Game {
 	}
 
 	async assignImposter(playerDataStore: PlayerDataStore) {
-		if (this.imposter !== undefined) {
+		if (this.imposter !== null) {
 			return;
 		}
 		const candidates: number[] = [];
