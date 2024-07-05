@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50"
+		class="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50 overflow-auto"
 	>
 		<div class="absolute w-full h-full bg-movez-purple"></div>
 		<div class="z-50 text-movez-green">

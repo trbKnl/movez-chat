@@ -41,7 +41,7 @@
 						>
 							<!-- Removed the sender's username display -->
 							<div v-if="displaySender(message, index)" class="font-semibold">
-								{{ message.fromSelf ? "You" : "Partner" }}
+								{{ message.fromSelf ? "You" : getPlayerName(message) }}
 							</div>
 
 							<div class="text-base tracking-normal">{{ message.content }}</div>
@@ -59,12 +59,12 @@
 			</div>
 		</div>
 
-		<!-- Bottom item with fixed height -->
 		<div class="relative w-300 h-200 m-5">
 			<div
 				class="flex justify-between items-center bg-gray-100 rounded-lg border border-movez-pale-pink"
 			>
-				<VDropdown ref="dropdown">
+        <!-- emojiPicker -->
+				<VDropdown ref="emojiPicker">
 					<button class="m-5">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +79,9 @@
 						</svg>
 					</button>
 					<template #popper>
-						<VuemojiPicker @emojiClick="handleEmojiClick" />
+						<VuemojiPicker 
+              @emojiClick="handleEmojiClick" 
+            />
 					</template>
 				</VDropdown>
 
@@ -141,7 +143,7 @@ export default {
   methods: {
     onSubmit() {
       if (this.isValid) {
-        this.$refs.dropdown.hide();
+        this.$refs.emojiPicker.hide();
         this.$emit("input", this.input);
         this.input = "";
       }
@@ -159,44 +161,16 @@ export default {
     },
 
     handleKeyAnywhere(event) {
-      if (
-        event.target !== this.$refs.inputBox &&
-        !event.metaKey &&
-        !event.ctrlKey &&
-        !event.altKey
-      ) {
-        event.preventDefault();
-
-        const textarea = this.$refs.inputBox;
+      if ( event.target === this.$refs.inputBox ) { return }
+      if ( document.activeElement.nodeName === "EMOJI-PICKER" ) { return }
+      const textarea = this.$refs.inputBox;
+      if (textarea !== null) {
         textarea.focus();
-
-        const key = event.key;
-        const isShiftPressed = event.shiftKey;
-
-        if (isShiftPressed && /^[a-zA-Z]$/.test(key)) {
-          const upperKey = key.toUpperCase();
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          textarea.value =
-            textarea.value.slice(0, start) +
-            upperKey +
-            textarea.value.slice(end);
-          textarea.selectionStart = start + 1;
-          textarea.selectionEnd = start + 1;
-        } else if (key !== "Shift") {
-          // For other keys, simulate typing as before
-          const start = textarea.selectionStart;
-          const end = textarea.selectionEnd;
-          textarea.value =
-            textarea.value.slice(0, start) + key + textarea.value.slice(end);
-          textarea.selectionStart = start + 1;
-          textarea.selectionEnd = start + 1;
-        }
       }
     },
 
     displaySender(message, index) {
-      return index === 0 || this.messages[index - 1].fromSelf !== message.fromSelf;
+      return index === 0 || this.getPlayerName(this.messages[index - 1]) !== this.getPlayerName(message);
     },
 
     scrollToBottom() {
@@ -214,6 +188,28 @@ export default {
         return PlayerColorMapping[player.color];
       } else {
         return "hidden";
+      }
+    },
+
+    getPlayerName(message) {
+      const player = this.players.find(
+        (player) => player.userId === message.fromUserId
+      );
+      if (player !== undefined) {
+        switch (player.color) {
+          case "Fluffy Cat":
+            return "Fluffy Cat";
+          case "Dreamy Sloth":
+            return "Dreamy Sloth";
+          case "Funky Panda":
+            return "Funky Panda";
+          case "Bouncy Dog":
+            return "Bouncy Dog";
+          default:
+            return null;
+        }
+      } else {
+        return null;
       }
     },
 
@@ -272,6 +268,10 @@ export default {
       this.$refs.inputBox.focus();
     });
     document.addEventListener("keydown", this.handleKeyAnywhere);
+  },
+
+  beforeDestroy() {
+    document.removeEventListener("keydown", this.handleKeyAnywhere);
   },
 
   updated() {

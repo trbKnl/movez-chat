@@ -1,6 +1,6 @@
 <template>
 	<div
-		class="fixed top-0 left-0 w-full h-full flex justify-center items-center z-50"
+		class="fixed top-0 left-0 w-full h-full flex justify-center items-center z-50 overflow-auto"
 	>
 		<div class="absolute w-full h-full bg-white"></div>
 		<div class="z-50 text-center w-[1500px]">

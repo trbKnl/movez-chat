@@ -1,7 +1,7 @@
 <template>
 	<div v-if="!showThankYou">
 		<div
-			class="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-center z-50"
+			class="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-center z-50 overflow-auto"
 		>
 			<div class="absolute w-full h-full bg-white opacity-50"></div>
 			<div

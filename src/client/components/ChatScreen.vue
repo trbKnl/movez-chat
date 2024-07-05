@@ -27,6 +27,7 @@
 		</div>
 		<div class="w-2/3 bg-white">
 			<message-panel
+        :key="hashObject(playerDataArray)"
 				:playerRole="playerRole"
 				:players="playerDataArray"
 				:messages="messageData"
@@ -41,6 +42,7 @@
 
 import socket from "../socket";
 import { PropType } from "vue";
+import objectHash from 'object-hash';
 
 import PlayerCard from "./PlayerCard.vue";
 import MessagePanel from "./MessagePanel.vue";
@@ -115,6 +117,10 @@ export default {
 				fromSelf: true,
 			});
 		},
+
+    hashObject(obj: any) {
+      return objectHash(obj); // Assuming objectHash is imported or defined elsewhere
+    },
 
 		collectPartners() {
 			return this.playerDataArray.filter(
