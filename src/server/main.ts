@@ -147,12 +147,6 @@ io.use(async (socket, next) => {
     connected: true,
   }
 
-  //const userSessionData: UserSessionData = {
-  //  sessionId: randomId(),
-  //  userId: randomId(),
-  //  gameId: "",
-  //  connected: true,
-  //}
   sessionStore.saveSession(userSessionData)
 
   socket.data.userSessionData = userSessionData
@@ -184,6 +178,7 @@ io.on("connection", async (socket) => {
     await game.syncGameForSinglePlayer(io, messageStore, playerDataStore, player)
   } else {
     console.log("Not in a game add player to game")
+    console.log(player)
     await waitingQueue.add("participant", player)
   }
 
