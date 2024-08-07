@@ -178,7 +178,6 @@ io.on("connection", async (socket) => {
     await game.syncGameForSinglePlayer(io, messageStore, playerDataStore, player)
   } else {
     console.log("Not in a game add player to game")
-    console.log(player)
     await waitingQueue.add("participant", player)
   }
 
