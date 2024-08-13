@@ -186,11 +186,11 @@ io.on("connection", async (socket) => {
       const result = MessageSchema.safeParse({content: content, fromUserId: player.userId, toUserId: recipient})
       if (result.success) {
         const message = result.data
-        myLogger(player, message)
         socket.to(recipient).to(player.userId).emit("private message", message)
         messageStore.saveMessage(message)
       }
     })
+    myLogger(player, {"content": content, "to": to})
   })
 
   socket.on("disconnect", async () => {
