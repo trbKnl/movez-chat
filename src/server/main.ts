@@ -193,6 +193,12 @@ io.on("connection", async (socket) => {
     myLogger(player, {"content": content, "to": to})
   })
 
+  socket.on("typing", ({ to }) => {
+    to.forEach((recipient: string) => {
+      socket.to(recipient).emit("typing", player.userId)
+    })
+  })
+
   socket.on("disconnect", async () => {
     removeFromPlayers(player.userId)
     const matchingSockets = await io.in(player.userId).allSockets()
