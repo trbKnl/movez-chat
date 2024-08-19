@@ -56,7 +56,7 @@
 							/>
 						</li>
 					</ul>
-				</div>
+				</div>  
 			</div>
 		</div>
 
@@ -101,6 +101,7 @@
 </template>
 
 <script>
+import socket from "../socket";
 import { PlayerColorMapping } from "../config.ts";
 import insertText from "insert-text-at-cursor";
 import { VuemojiPicker } from "vuemoji-picker";
@@ -108,10 +109,12 @@ import PandaIcon from "../../../public/images/panda.svg";
 import CatIcon from "../../../public/images/cat.svg";
 import DogIcon from "../../../public/images/dog.svg";
 import SlothIcon from "../../../public/images/sloth.svg";
+import throttle from 'lodash/throttle';
+
 
 export default {
   name: "MessagePanel",
-  emits: ["input"],
+  emits: ["input","isTyping"],
   props: ["players", "messages", "playerRole"],
   data() {
     return {
@@ -160,6 +163,9 @@ export default {
         this.onSubmit();
       }
     },
+    emitIsTyping: throttle(function() {
+      this.$emit("isTyping");
+    }, 500),
 
     handleKeyAnywhere(event) {
       if ( event.target === this.$refs.inputBox ) { return }
@@ -268,11 +274,13 @@ export default {
     this.$nextTick(() => {
       this.$refs.inputBox.focus();
     });
+    document.addEventListener("keydown", this.emitIsTyping);
     document.addEventListener("keydown", this.handleKeyAnywhere);
   },
 
   beforeDestroy() {
     document.removeEventListener("keydown", this.handleKeyAnywhere);
+    document.removeEventListener("keydown", this.emitIsTyping);
   },
 
   updated() {
