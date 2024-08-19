@@ -10,7 +10,7 @@
 					v-if="playerRole === 'Imposter'"
 				>
 					<h1 class="font-bold text-5xl text-movez-purple">
-						HEY IMPOSTOR! SIT BACK AND RELAX ...
+						HEY IMPOSTER! SIT BACK AND RELAX ...
 					</h1>
 					<h1 class="font-bold text-5xl text-movez-purple">
 						THE OTHERS ARE BUSY VOTING.

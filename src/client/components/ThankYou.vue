@@ -4,18 +4,22 @@
 	>
 		<div class="absolute w-full h-full"></div>
 		<div class="z-50 text-center">
-			<div class="bg-white">
-				<p class="font-bold text-5xl text-movez-purple my-10 py-10">
+			<div class="bg-white flex flex-col items-center">
+				<p class="text-5xl text-movez-purple">
 					Thank you for playing Between Us. :-)
 				</p>
-				<p class="font-bold text-5xl text-movez-purple">
-					Now, please fill in the questionnaire below
+				<p class="text-5xl text-movez-purple mt-10">
+					We have some final questions to complete
 				</p>
-				<p class="font-bold text-5xl text-movez-purple">
-					to complete your first task of the program:
+				<p class="text-5xl text-movez-purple">your first task.</p>
+				<p class="survey text-5xl text-movez-purple mt-10">
+					Click on "Start Survey". You will need your
 				</p>
-				
-				<button @click="startSurvey"
+				<p class="survey text-5xl text-movez-purple">
+					unique ID: {{ sessionId }}
+				</p>
+				<button
+					@click="startSurvey"
 					class="bg-movez-purple text-white w-[300px] p-[10px] text-xl font-bold rounded-lg mt-10"
 				>
 					Start Survey
@@ -28,18 +32,26 @@
 <script>
 import socket from "../socket";
 
-
-
 export default {
 	data() {
 		return {
 			isSubmitted: false,
+			sessionId: null,
 		};
+	},
+	created() {
+		this.sessionId = window.location.pathname
+			.replace(/\/$/, "")
+			.split("/")
+			.pop();
 	},
 	methods: {
 		startSurvey() {
-      		window.open('https://erasmusuniversity.eu.qualtrics.com/jfe/form/SV_a4V5P06Y3fuj7Se', '_blank');
-    	},
+			window.open(
+				"https://erasmusuniversity.eu.qualtrics.com/jfe/form/SV_a4V5P06Y3fuj7Se",
+				"_blank"
+			);
+		},
 		submit(suggestion) {
 			this.isSubmitted = true;
 			socket.emit("suggestion", suggestion);
@@ -48,4 +60,12 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+@font-face {
+	font-family: Fieldwork-Fat;
+	src: url("/public/fonts/Fieldwork22GeoFat.otf");
+}
+.survey {
+	font-family: Fieldwork-Fat, sans-serif;
+}
+</style>
