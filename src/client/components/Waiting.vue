@@ -5,11 +5,12 @@
 		<div class="absolute w-full h-full bg-white"></div>
 		<div class="z-50 flex flex-col items-center">
 			<h2 class="text-5xl font-thin text-white">
-				Waiting for {{ playersNeeded }} players to start the game...
+				Waiting for {{ playersNeeded }}
+				{{ playersNeeded === 1 ? "player" : "players" }} to start the game...
 			</h2>
-      <div class="flex flex-col w-[350px] h-[35px]">
-        <ProgressBar :isStatic="true"/>
-      </div>
+			<div class="flex flex-col w-[350px] h-[35px]">
+				<ProgressBar :isStatic="true" />
+			</div>
 		</div>
 	</div>
 </template>
