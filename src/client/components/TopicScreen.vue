@@ -8,30 +8,40 @@
 				class="flex flex-col items-center justify-center"
 				v-if="currentScreen == 'AssignmentScreen'"
 			>
-				<div class="flex items-center justify-center">
-					<img
-						:src="getPlayerIcon(playerColor)"
-						alt="animal"
-						class="w-[120px]"
-					/>
-					<h1 class="font-bold text-7xl mx-8 text-movez-purple">
-						You are the {{ playerColor }} 
-					</h1>
+				<div class="flex items-center justify-between mr-[100px]">
+					<div>
+						<img
+							:src="getPlayerIcon(playerColor)"
+							alt="animal"
+							class="w-[150px]"
+						/>
+					</div>
+
+					<div class="flex flex-col justify-center items-center">
+						<h1 class="font-bold text-6xl mx-8 text-movez-purple">
+							For this game you will be...
+						</h1>
+						<p class="font-bold text-6xl text-movez-purple">
+							{{ playerColor }}
+						</p>
+					</div>
 				</div>
-				<h2 class="text-black text-2xl font-thin text-center">
-					2 more questions before we start the game.
-				</h2>
-				<button
-					@click="handleButtonClick"
-					class="text-white font-bold py-1.5 px-10 text-[17px] rounded mt-7"
-					:class="{
-						'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
-						'bg-gray-300 cursor-not-allowed': !isButtonActive,
-					}"
-					:disabled="!isButtonActive"
-				>
-					Continue
-				</button>
+				<div class="flex flex-col items-center justify-center mt-3">
+					<h2 class="text-black text-2xl font-thin text-center ml-[50px]">
+						We will ask 2 more questions before we start...
+					</h2>
+					<button
+						@click="handleButtonClick"
+						class="text-white font-bold py-2.5 px-10 text-[17px] rounded mt-7"
+						:class="{
+							'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
+							'bg-gray-300 cursor-not-allowed': !isButtonActive,
+						}"
+						:disabled="!isButtonActive"
+					>
+						Continue
+					</button>
+				</div>
 			</div>
 
 			<div
@@ -41,7 +51,7 @@
 				<h1 class="font-bold text-6xl mx-8 text-movez-purple">
 					{{ gameTexts.topicAssignment }}
 				</h1>
-				<h2 class="text-black text-3xl font-thin text-center mt-5 mb-5">
+				<h2 class="text-black text-2xl font-thin text-center mt-5 mb-5">
 					{{ gameTexts.topicQuestion }}
 				</h2>
 				<ThumbMenu @isThumbUp="likeCallback" />
@@ -51,7 +61,7 @@
 				</p>
 				<button
 					@click="handleButtonClick"
-					class="text-white font-bold py-1.5 text-[17px] px-10 rounded mt-5"
+					class="text-white font-bold py-2.5 text-[17px] px-10 rounded mt-5"
 					:class="{
 						'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
 						'bg-gray-300 cursor-not-allowed': !isButtonActive,
@@ -67,7 +77,7 @@
 				v-else-if="currentScreen == 'ImposterScreen'"
 			>
 				<h1 class="font-bold text-6xl mx-8 text-movez-purple mb-5">
-					Would you like to be an imposter?
+					Would you like to be the imposter?
 				</h1>
 				<ThumbMenu @isThumbUp="imposterCallback" />
 				<p class="text font-semibold text-gray-800 mb-5 text-center mt-5">
@@ -76,7 +86,7 @@
 				</p>
 				<button
 					@click="handleButtonClick"
-					class="text-white font-bold py-1.5 text-[17px] px-10 rounded mt-5"
+					class="text-white font-bold py-2.5 text-[17px] px-10 rounded mt-5"
 					:class="{
 						'bg-movez-purple hover:bg-fuchsia-950': isButtonActive,
 						'bg-gray-300 cursor-not-allowed': !isButtonActive,

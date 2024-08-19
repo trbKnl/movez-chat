@@ -39,7 +39,7 @@
 								class="absolute left-[-100px] bottom-[130px] w-[200px]"
 							/>
 							<Confetti />
-							<p>Well done investigator, you caught the impostor! You win!</p>
+							<p>Well done investigator, you caught the imposter! You win!</p>
 						</div>
 						<div v-else class="relative">
 							<img
@@ -59,7 +59,7 @@
 					</div>
 				</div>
 				<button
-					class="bg-movez-purple text-white absolute bottom-[-110px] font-bold py-1.5 text-[17px] px-10 rounded"
+					class="bg-movez-purple text-white absolute bottom-[-110px] font-bold py-2.5 text-[17px] px-10 rounded"
 					@click="handleContinue"
 				>
 					Continue

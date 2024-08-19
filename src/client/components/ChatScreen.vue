@@ -32,7 +32,6 @@
 				:players="playerDataArray"
 				:messages="messageData"
 				@input="onMessage"
-        @isTyping="onIsTyping"
 			/>
 		</div>
 	</div>
@@ -117,14 +116,6 @@ export default {
 				toUserId: "",
 				fromSelf: true,
 			});
-		},
-
-		onIsTyping() {
-			const partners = this.collectPartners();
-			const partnerUserIds = partners.map(
-				(player: PlayerData) => player.userId
-			);
-			socket.emit("typing", { to: partnerUserIds });
 		},
 
     hashObject(obj: any) {
