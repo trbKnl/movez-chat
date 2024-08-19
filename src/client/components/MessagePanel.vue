@@ -10,17 +10,18 @@
           Try to find out who the imposter is!
         </div>
 			</p>
-			<div class="relative">
-				<img
+			<div class="relative">      
+        <div class="mt-8 text-amber-300 text-center"><img
 					src="/public/images/light-bulb.svg"
 					alt="Avatar"
-					class="w-16 h-16 mt-3 light-bulb transition-opacity duration-300 opacity-40 hover:opacity-100"
+					class="w-20 h-20 mt-3 light-bulb transition-opacity duration-300 opacity-70 hover:opacity-100"
 					@mouseenter="showTip"
 					@mouseleave="hideTip"
-				/>
+				/>Hover for Tips!</div>
+				
 				<div
 					v-if="showTips"
-				class="absolute top-20 right-5 w-64 p-2 rounded-lg bg-gray-100 text-zinc-400 text-sm z-10 opacity-0 transition-opacity duration-300"
+				class="absolute top-30 right-5 w-64 p-2 rounded-lg bg-gray-100 text-zinc-400 text-sm z-10 opacity-0 transition-opacity duration-300"
                :class="{ 'opacity-80': showTips }"
 				>
 					{{ currentTip }}
@@ -100,7 +101,6 @@
 </template>
 
 <script>
-import socket from "../socket";
 import { PlayerColorMapping } from "../config.ts";
 import insertText from "insert-text-at-cursor";
 import { VuemojiPicker } from "vuemoji-picker";
@@ -108,19 +108,11 @@ import PandaIcon from "../../../public/images/panda.svg";
 import CatIcon from "../../../public/images/cat.svg";
 import DogIcon from "../../../public/images/dog.svg";
 import SlothIcon from "../../../public/images/sloth.svg";
-import throttle from 'lodash/throttle';
 
 export default {
   name: "MessagePanel",
-  emits: [
-    "input",
-    "isTyping",
-  ],
-  props: [
-    "players",
-    "messages", 
-    "playerRole",
-  ],
+  emits: ["input"],
+  props: ["players", "messages", "playerRole"],
   data() {
     return {
       input: "",
@@ -168,10 +160,6 @@ export default {
         this.onSubmit();
       }
     },
-
-    emitIsTyping: throttle(function() {
-      this.$emit("isTyping");
-    }, 500),
 
     handleKeyAnywhere(event) {
       if ( event.target === this.$refs.inputBox ) { return }
@@ -281,12 +269,10 @@ export default {
       this.$refs.inputBox.focus();
     });
     document.addEventListener("keydown", this.handleKeyAnywhere);
-    document.addEventListener("keydown", this.emitIsTyping);
   },
 
   beforeDestroy() {
     document.removeEventListener("keydown", this.handleKeyAnywhere);
-    document.removeEventListener("keydown", this.emitIsTyping);
   },
 
   updated() {

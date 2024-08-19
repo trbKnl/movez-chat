@@ -23,8 +23,8 @@ export const gameTextsSports: GameTexts = {
 		"Make the others believe that you don't like watching football",
 	overviewPlayerAssignment:
 		"Who is the imposter, and is lying about their feelings toward football?",
-	chatScreenYouLike: "You say that you like football",
-	chatScreenYouDislike: "You say that you don't like football",
-	chatScreenPlayerLike: "<PLAYER> says they like football",
-	chatScreenPlayerDislike: "<PLAYER> says they don't like football",
+	chatScreenYouLike: "You say that you like watching football",
+	chatScreenYouDislike: "You say that you don't like watching football",
+	chatScreenPlayerLike: "<PLAYER> says they like watching football",
+	chatScreenPlayerDislike: "<PLAYER> says they don't like watching football",
 };
