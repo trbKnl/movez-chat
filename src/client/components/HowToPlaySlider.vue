@@ -6,8 +6,8 @@
 			:slides="slides"
 		/>
 		<div
-			v-if="slideIndex !== 5"
-			class="absolute right-0 bottom-[35%] mr-3"
+			v-if="slideIndex !== 6"
+			class="absolute right-0 bottom-[35%] mr-3 cursor-pointer"
 			@click="slideRight"
 		>
 			<img
@@ -18,7 +18,7 @@
 		</div>
 		<div
 			v-if="slideIndex !== 1"
-			class="absolute left-0 bottom-[35%] ml-3"
+			class="absolute left-0 bottom-[35%] ml-3 cursor-pointer"
 			@click="slideLeft"
 		>
 			<img
@@ -41,6 +41,11 @@ export default {
 		return {
 			slideIndex: 1,
 		};
+	},
+	watch: {
+		slideIndex(newValue) {
+			this.$emit("updateSlideIndex", newValue);
+		},
 	},
 	methods: {
 		slideLeft() {

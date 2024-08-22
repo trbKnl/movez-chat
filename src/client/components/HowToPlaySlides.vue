@@ -1,8 +1,25 @@
 <template>
 	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 1">
+		<div class="flex justify-center text-white text-5xl mt-4">
+		</div>
+		<div>
+			<div class="flex justify-center items-center mt-4">
+				<img
+					class="w-[500px]"
+					src="../../../public/images/movez_secondary-logo.svg"
+					alt="movez-logo"
+				/>
+			</div>
+		</div>
+		<div class="text-white text-lg mb-6">
+			<p>These slides will guide you on how to play the chat game.</p>
+		
+		</div>
+	</div>
+	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 2">
 		<div class="flex justify-between text-white text-5xl">
 			<h1>HOW TO PLAY</h1>
-			<p>{{ `${slideIndex} / 5` }}</p>
+			<p>{{ `${slideIndex - 1} / 5` }}</p>
 		</div>
 		<div>
 			<div class="flex justify-center ml-3 mt-3 relative">
@@ -72,10 +89,10 @@
 			<p>But there is one imposter between you...</p>
 		</div>
 	</div>
-	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 2">
+	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 3">
 		<div class="flex justify-between text-white text-5xl">
 			<h1>HOW TO PLAY</h1>
-			<p>{{ `${slideIndex} / 5` }}</p>
+			<p>{{ `${slideIndex - 1} / 5` }}</p>
 		</div>
 		<div class="flex justify-evenly mt-12">
 			<div class="flex flex-col">
@@ -109,10 +126,10 @@
 			<p>2. Choose if you want to play the imposter or not</p>
 		</div>
 	</div>
-	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 3">
+	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 4">
 		<div class="flex justify-between text-white text-5xl">
 			<h1>HOW TO PLAY</h1>
-			<p>{{ `${slideIndex} / 5` }}</p>
+			<p>{{ `${slideIndex - 1} / 5` }}</p>
 		</div>
 		<div class="flex justify-around items-center mt-20">
 			<div class="relative">
@@ -165,7 +182,7 @@
 				<p>
 					you
 					<span class="underline">do</span> /
-					<span class="underline">do not</span> like football(opposite to your
+					<span class="underline">do not</span> like football (opposite to your
 					actual liking).
 				</p>
 			</div>
@@ -175,10 +192,10 @@
 			</div>
 		</div>
 	</div>
-	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 4">
+	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 5">
 		<div class="flex justify-between text-white text-5xl">
 			<h1>HOW TO PLAY</h1>
-			<p>{{ `${slideIndex} / 5` }}</p>
+			<p>{{ `${slideIndex - 1} / 5` }}</p>
 		</div>
 		<div class="flex justify-around items-center mt-20">
 			<div>
@@ -217,10 +234,10 @@
 			</div>
 		</div>
 	</div>
-	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 5">
+	<div class="bg-movez-purple px-20 py-10" v-if="slideIndex === 6">
 		<div class="flex justify-between text-white text-5xl">
 			<h1>STRATEGY TIPS</h1>
-			<p>{{ `${slideIndex} / 5` }}</p>
+			<p>{{ `${slideIndex - 1} / 5` }}</p>
 		</div>
 		<div class="flex items-center mt-[40px] ml-10">
 			<div>

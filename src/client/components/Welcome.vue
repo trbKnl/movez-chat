@@ -7,9 +7,15 @@
 			<div class="bg-white p-8 flex flex-col justify-center items-center">
 				<h1 class="text-6xl text-movez-purple mt-3">Between Us</h1>
 
-				<HowToPlaySlider />
+				<HowToPlaySlider @updateSlideIndex="handleSlideIndexUpdate" />
+
 				<button
-					class="bg-movez-green text-white font-bold py-2.5 text-[17px] px-10 rounded mt-12"
+					:class="{
+						'cursor-not-allowed bg-gray-400 opacity-50': slideIndex !== 6,
+						'bg-movez-green': slideIndex === 6,
+					}"
+					:disabled="slideIndex !== 6"
+					class="text-white font-bold py-2.5 text-[17px] px-10 rounded mt-12"
 					@click="$emit('startChat')"
 				>
 					Start Game
@@ -41,6 +47,16 @@ export default {
 		HowToPlaySlider,
 	},
 	emits: ["startChat"],
+	data() {
+		return {
+			slideIndex: 1,
+		};
+	},
+	methods: {
+		handleSlideIndexUpdate(index) {
+			this.slideIndex = index;
+		},
+	},
 };
 </script>
 
