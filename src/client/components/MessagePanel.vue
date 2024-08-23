@@ -7,14 +7,21 @@
           Hey imposter, try not to get caught.
         </div>
         <div v-else>
-          Try to find out who the imposter is!
-        </div>
+    <div v-if="players.length === 2">
+     <p>{{ otherPlayerDetails.color }} says they {{ otherPlayerDetails.likeTopic}} football.</p>  
+     <p>Try to find out if they are telling the truth.</p> 
+    </div>   
+    <div v-else-if="players.length === 4">
+     <p>Team work! Try to find out the imposter together!</p> 
+      <p>Hey imposter, try not to get caught.</p>
+    </div>
+  </div>
 			</p>
 			<div class="relative">      
-        <div class="mt-8 text-amber-300 text-center"><img
+        <div class="mt-4 text-amber-300 text-center"><img
 					src="/public/images/light-bulb.svg"
 					alt="Avatar"
-					class="w-20 h-20 mt-3 light-bulb transition-opacity duration-300 opacity-70 hover:opacity-100"
+					class="w-20 h-20 light-bulb transition-opacity duration-300 opacity-70 hover:opacity-100"
 					@mouseenter="showTip"
 					@mouseleave="hideTip"
 				/>Hover for Tips!</div>
@@ -56,7 +63,7 @@
 							/>
 						</li>
 					</ul>
-				</div>  
+				</div>
 			</div>
 		</div>
 
@@ -101,7 +108,6 @@
 </template>
 
 <script>
-import socket from "../socket";
 import { PlayerColorMapping } from "../config.ts";
 import insertText from "insert-text-at-cursor";
 import { VuemojiPicker } from "vuemoji-picker";
@@ -109,12 +115,10 @@ import PandaIcon from "../../../public/images/panda.svg";
 import CatIcon from "../../../public/images/cat.svg";
 import DogIcon from "../../../public/images/dog.svg";
 import SlothIcon from "../../../public/images/sloth.svg";
-import throttle from 'lodash/throttle';
-
 
 export default {
   name: "MessagePanel",
-  emits: ["input","isTyping"],
+  emits: ["input"],
   props: ["players", "messages", "playerRole"],
   data() {
     return {
@@ -163,9 +167,6 @@ export default {
         this.onSubmit();
       }
     },
-    emitIsTyping: throttle(function() {
-      this.$emit("isTyping");
-    }, 500),
 
     handleKeyAnywhere(event) {
       if ( event.target === this.$refs.inputBox ) { return }
@@ -267,6 +268,30 @@ export default {
     isValid() {
       return this.input.trim().length > 0;
     },
+    otherPlayerDetails() {
+      const otherPlayer = this.players.find(
+        (player) => !player.isCurrentPlayer
+      );
+      if (otherPlayer) {
+        let likeTopic = otherPlayer.likeTopic;
+        
+        // Invert the likeTopic if the other player is an imposter
+        if (otherPlayer.playerRole === 'Imposter') {
+          likeTopic = likeTopic === 'like' ? 'dislike' : 'like';
+        }
+        
+        return {
+          color: otherPlayer.color,
+          likeTopic: likeTopic
+        };
+      }
+    
+    return {
+      color: "The other player",
+      likeTopic: "unknown" // Or any default value you'd prefer
+    };
+  }
+  
   },
 
   mounted() {
@@ -274,13 +299,12 @@ export default {
     this.$nextTick(() => {
       this.$refs.inputBox.focus();
     });
-    document.addEventListener("keydown", this.emitIsTyping);
     document.addEventListener("keydown", this.handleKeyAnywhere);
+    console.log("Players Prop:", this.players);
   },
 
   beforeDestroy() {
     document.removeEventListener("keydown", this.handleKeyAnywhere);
-    document.removeEventListener("keydown", this.emitIsTyping);
   },
 
   updated() {
