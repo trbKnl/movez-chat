@@ -6,6 +6,7 @@ import ViteExpress from "vite-express"
 import session from "cookie-session"
 import crypto from "crypto"
 import { Worker, Queue } from "bullmq"
+import { AsyncRedactor } from 'redact-pii'
 
 import { RedisSessionStore } from "./sessionStore"
 import type { UserSessionData } from "./sessionStore"
@@ -155,6 +156,7 @@ io.use(async (socket, next) => {
 
 
 io.on("connection", async (socket) => {
+  const redactor = new AsyncRedactor();
 
   const player: Player = {
     sessionId: socket.data.userSessionData.sessionId, 
@@ -183,6 +185,12 @@ io.on("connection", async (socket) => {
 
   socket.on("private message", ({ content, to }) => {
     to.forEach((recipient: string) => {
+      console.log("Generated content: ", content)
+      
+      redactor.redactAsync(content).then(redactedText => {
+        // Hi NAME, Please give me a call at PHONE_NUMBER
+        console.log("Redacted content: ",redactedText);
+      });
       const result = MessageSchema.safeParse({content: content, fromUserId: player.userId, toUserId: recipient})
       if (result.success) {
         const message = result.data

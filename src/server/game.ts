@@ -222,6 +222,7 @@ export class Game {
 		}
 	}
 
+
 	async syncGameForSinglePlayer(
 		io: SocketIOServer,
 		messageStore: RedisMessageStore,
