@@ -48,7 +48,7 @@ export default {
 	methods: {
 		startSurvey() {
 			window.open(
-				"https://erasmusuniversity.eu.qualtrics.com/jfe/form/SV_a4V5P06Y3fuj7Se",
+				"https://erasmusuniversity.eu.qualtrics.com/jfe/form/SV_7UKxU1EBczstj0y",
 				"_blank"
 			);
 		},
