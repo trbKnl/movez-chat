@@ -19,7 +19,7 @@
 
 					<div class="flex flex-col justify-center items-center">
 						<h1 class="font-bold text-6xl mx-8 text-movez-purple">
-							For this game you will be...
+							In this game you will be...
 						</h1>
 						<p class="font-bold text-6xl text-movez-purple">
 							{{ playerColor }}

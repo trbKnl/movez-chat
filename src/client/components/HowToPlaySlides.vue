@@ -122,8 +122,8 @@
 		</div>
 		<div class="text-white text-lg mt-3">
 			<p class="mb-5">Before the chat starts...</p>
-			<p>1. Tell us if you like or dislike the chat topic: football.</p>
-			<p>2. Choose if you want to play the imposter or not</p>
+			<p>1. Let us know whether you like or dislike the chat topic: watching football.</p>
+			<p>2. Tell us whether you would like to play as the imposter or not.</p>
 		</div>
 	</div>
 	<div class="bg-movez-purple px-20 py-10 h-[500px] w-[900px]" v-if="slideIndex === 4">
@@ -224,8 +224,8 @@
 		</div>
 		<div class="text-white text-lg mt-20">
 			<div>
-				<p>First, you get to chat with each person in your group privately.</p>
-				<p>After, you will all meet in a group chat.</p>
+				<p>First, you chat with each of the 3 other players privately.</p>
+				<p>Afterwards, everyone joins the group chat.</p>
 			</div>
 			<div class="mt-3">
 				<p>
@@ -260,10 +260,9 @@
 			</div>
 			<div class="text-white text-lg ml-10">
 				<p>
-					<span class="underline">Imposter:</span> Try to make up small details
-					to make your story more
+					<span class="underline">Imposter:</span> Try adding small details to make your story more
 				</p>
-				<p>believeable. Also, don't forget to ask questions yourself.</p>
+				<p>convincing. Also, don’t forget to ask your own questions.</p>
 			</div>
 		</div>
 		<div class="flex items-center mt-[50px] ml-10">
@@ -287,16 +286,15 @@
 			</div>
 			<div class="text-white text-lg ml-10">
 				<p>
-					<span class="underline">Investigator:</span> Try to ask detailed
-					questions to find the imposter.
+					<span class="underline">Investigator:</span> Make sure to ask detailed questions to find the imposter. 
 				</p>
-				<p>Don't forget to share your own story to not be suspected.</p>
+				<p>Don’t forget to share your own story so that others don’t suspect you.</p>
 			</div>
 		</div>
 		<div class="flex items-center mt-4 ml-[150px]">
 			<div class="text-white text-lg">
-				<p>If you need other tips during the game you can hover on the</p>
-				<p>in the right corner</p>
+				<p>If you need more tips during the game, you can hover over the</p>
+				<p>in the top right corner.</p>
 			</div>
 			<div class="mb-16">
 				<img
