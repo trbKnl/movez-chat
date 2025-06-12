@@ -8,6 +8,7 @@
 				<p class="text-5xl text-movez-purple">
 					Thank you for playing Between Us. :-)
 				</p>
+<!---
 				<p class="text-5xl text-movez-purple mt-10">
 					We have some final questions to complete
 				</p>
@@ -24,6 +25,7 @@
 				>
 					Start Survey
 				</button>
+--->
 			</div>
 		</div>
 	</div>

@@ -203,12 +203,12 @@ export class Game {
 				break;
 			case "group chat":
 				await this.showGroupChatForAll(io, playerDataStore);
-				await this.sleepAndUpdateProgress(io, 300); // 5*60 = 300s
+				await this.sleepAndUpdateProgress(io, 240); // 4*60 = 240s
 				break;
 			case "chat":
 				while (this.currentRound < 3) {
 					await this.showChatScreenForAll(io, messageStore, playerDataStore);
-					await this.sleepAndUpdateProgress(io, 480); // 8*60 = 480s
+					await this.sleepAndUpdateProgress(io, 240); // 4*60 = 240s
 					this.nextRound();
 					this.save(gameStore);
 				}
