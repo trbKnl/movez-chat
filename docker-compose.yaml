@@ -15,6 +15,9 @@ services:
       options:
         fluentd-address: localhost:24224
         tag: movez-chat
+    depends_on:
+      - redis-db
+      - fluentd
 
   redis-db:
     image: redis:latest
